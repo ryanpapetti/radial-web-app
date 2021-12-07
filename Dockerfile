@@ -19,7 +19,7 @@ RUN pip3 install uwsgi
 
 # COPY nginx_config.conf /etc/nginx/conf.d/virtual.conf
 
-COPY flask=app-conf /etc/nginx/sites-enabled/default
+COPY flask-app-conf /etc/nginx/sites-enabled/default
 
 COPY entrypoint.sh /entrypoint.sh
 
