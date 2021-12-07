@@ -3,11 +3,11 @@
 # VHosts for projects
 
 <VirtualHost *:80>
-    ServerName radial-app.com
+    ServerName 54.202.137.205
 	ProxyPreserveHost On
 	ProxyRequests Off
-	ProxyPass / http://0.0.0.0:9000/
-	ProxyPassReverse / http://0.0.0.0:9000/
+	ProxyPass / http://localhost:9000/
+	ProxyPassReverse / http://localhost:9000/
 		
 	ErrorLog logs/error.log
     CustomLog logs/access.log combined

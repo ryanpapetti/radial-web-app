@@ -30,7 +30,7 @@ SPOTIFY_API_URL = "{}/{}".format(SPOTIFY_API_BASE_URL, API_VERSION)
 
 # Server-side Parameters
 CLIENT_SIDE_URL = "https://54.202.137.205/"
-# PORT = 8095
+# PORT = 9000
 REDIRECT_URI = "{}/callback".format(CLIENT_SIDE_URL)
 SCOPE = "user-read-recently-played user-top-read  playlist-modify-public playlist-modify-private user-library-modify playlist-read-private user-read-email user-read-private user-library-read playlist-read-collaborative"
 # STATE = ""
