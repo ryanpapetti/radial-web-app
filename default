@@ -1,0 +1,18 @@
+upstream django {
+    server unix:///var/www/radial-web-app/ops.sock;
+}
+server {
+    listen      9000;
+    server_name radial-app.com;
+
+    client_max_body_size 75M;
+
+    location /static {
+        alias /var/www/radial-web-app/app/static;
+    }
+
+    location / {
+        uwsgi_pass  django;
+        include uwsgi_params;
+    }
+}
