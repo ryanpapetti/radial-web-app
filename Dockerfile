@@ -15,8 +15,7 @@ RUN apt-get update
 RUN apt-get install python3-pip python3-dev nginx zip gcc musl-dev unzip nano systemd ffmpeg -y
 
 #  Create the environment:
-COPY environment.yml .
-RUN conda env create -f environment.yml
+RUN conda env create -f app/environment.yml
 
 # Initialize conda in bash config fiiles:
 RUN conda init bash
@@ -29,5 +28,7 @@ RUN conda activate radial-web-app
 COPY entrypoint.sh .
 
 EXPOSE 80
+RUN chmod +x entrypoint.sh
+CMD  ["./entrypoint.sh"]
 
 # ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "radial-web-app", "python", "main.py"]
