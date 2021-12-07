@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang='en'>
+    <head>
+        
+        <title>Radial Web App</title>
+        
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <!-- Latest compiled JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+        
+        <!-- Materialize -->
+        
+        <!-- Compiled and minified JavaScript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+        <!-- Compiled and minified CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+        <!-- Icons -->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+        <!-- Animate.CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css">
+
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        
+    </head>
+
+
+    <body>
+        <div class="container-fluid text-center">
+            <div class="row">
+                <div class='col-sm-12 animated fadeIn'>
+                    <h1 class="animated fadeIn">Welcome to Radial!</h1>
+                    <h3 class="animated fadeIn delay-1s">A new way to explore your musical playlists with clustering</h3>
+                </div>
+                <div class='col-sm-12 animated fadeIn delay-1s'>
+                    <a href="{{url_for('authenticateuser')}}" class="btn btn-primary btn-lg active get-started" role="button" aria-pressed="true" data-toggle="button" target="_blank" >Get Started</a>
+                    <script type="text/javascript">
+                        $("a.get-started").on("click",function(){
+                            window.open("{{url_for('authenticateuser')}}", "_self");
+                        });
+                   </script>
+
+
+                </div>
+            </div>
+        </div>
+
+
+    <footer>
+        
+    </footer>
+
+    </body>
+
+</html>

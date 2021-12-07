@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang='en'>
+    <head>
+        
+        <title>Radial Web App</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        
+        <!-- Materialize -->
+        <!-- Compiled and minified CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+        <!-- Compiled and minified JavaScript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+        <!-- Icons -->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+        <!-- Animate.CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css">
+
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        
+        <!-- Latest compiled JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+        <!-- MathJax for LaTeX -->
+        <!-- <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script> -->
+
+        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script> -->
+
+        <!-- MY OWN CSS -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='appeducation.css') }}" media="screen">
+    </head>
+
+
+    <body>
+        <div class="container-fluid text-center">
+            <div class="row">
+                <div class='col-sm-12 animated fadeIn'>
+                    <h1 class="animated fadeIn">About Radial</h1>
+                    <!-- <h3 class="animated fadeIn delay-1s">A new way to explore your musical playlists with clustering</h3> -->
+                </div>
+            </div>
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>You've never seen something like Radial before...</h2>
+                <p>Radial makes clustering fun by leveraging your Spotify data to group your tracks based on their structural similarity</p>
+                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">How So?</a>
+                <p class="text-right">1/4</p> 
+            </div>
+        
+        
+        
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>Defining Track Similarity</h2>
+                <p>How do we decide how two tracks are similar? We take collected track metadata from Spotify, scale them into a usable 0-1 range, and then use the standard distance formula. </p>
+                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a>
+                <p class="text-right">2/4</p>  
+            </div>
+
+
+
+
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>Meet Your Clusterers</h2>
+                <p>Once the data are structured accordingly, it is time to choose a clustering algorithm to group your data. We have two options for you</p>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <h4>Agglomerative Hierarchical</h4>
+                            <p>
+                                A simple one comparison at a time. Utilizes "complete" linkage for maximum robustness in grouping
+                            </p>
+
+                        </div>
+                        <div class="col-xs-6">
+                            <h4>KMeans</h4>
+                            <p>
+                                Leverage the power of KMeans to group your tracks around common centroids. Traditional clustering approach
+                            </p>
+
+                        </div>
+                    </div>
+
+                </div>
+                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">Let's Pick One</a>
+                <p class="text-right">3/4</p>  
+            </div>
+ 
+            
+            
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>Now Your Clustering Types</h2>
+                <p>Once the data are structured accordingly, it is time to choose a clustering algorithm to group your data. We have two options for you</p>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-xs-4">
+                            <h4>Simple Clustering</h4>
+                            <p>
+                                Suitable especially for total track size (&lt; 250). Produces five groups of tracks.
+                            </p>
+
+                        </div>
+                        <div class="col-xs-4">
+                            <h4>Standard Clustering</h4>
+                            <p>
+                                Suitable for all total track sizes. Produces nine groups of tracks.
+                            </p>
+
+                        </div>
+
+                        <div class="col-xs-4">
+                            <h4>Deep Clustering</h4>
+                            <p>
+                                Suitable especially for large track collections (&gt; 1000) tracks. Produces thirteen groups of tracks. 
+                            </p>
+
+                        </div>
+                    </div>
+
+                </div>
+                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">Let's Pick One</a>
+                <p class="text-right">4/5</p>  
+            </div>
+
+
+
+
+
+
+        
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>Customize Your Clustering</h2>
+                <p>Radial makes clustering fun by leveraging your Spotify data to group your tracks based on their structural similarity</p>
+
+
+                <div class="container">
+                        <form class="u-clearfix u-form-spacing-10 u-form-vertical u-inner-form" action="{{url_for('clustertracks')}}" method="post">
+
+                            <div class="mb-3 row">
+                                <label for="algorithm">Choose Your Algorithm</label>
+                                <select class="form-select mb-3 form-control" name="algorithm">
+                                  <!-- <option selected>Desired Clusterer</option> -->
+                                  <option>Agglomerative Hierarchical</option>
+                                  <option>KMeans</option>
+                                </select>
+                                  
+                                  
+                                  <label for="desired_clusters">Choose Your Cluster Size</label>
+                                  <select class="form-select form-control mb-3" name="desired_clusters">
+                                      <!-- <option selected>Desired Clusters</option> -->
+                                      <option>Simple Clustering (5)</option>
+                                      <option>Standard Clustering (9)</option>
+                                      <option>Deep Clustering (13)</option>
+                                    </select>
+                                </div>
+                                
+                            <button type="submit" class="btn btn-primary">See your results</button>
+                        </form>
+                </div>
+
+                <p class="text-right">5/5</p>  
+            </div>        
+        
+            
+        
+            </div>
+
+    <footer>
+        
+    </footer>
+
+    </body>
+
+</html>

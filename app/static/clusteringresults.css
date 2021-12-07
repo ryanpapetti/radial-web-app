@@ -1,0 +1,10 @@
+.centroid img {
+    height: 300px;
+    width: 250px;
+}
+
+
+.deploy-button {
+    /* max-width: 85%; */
+    font-size: 16px;
+}
