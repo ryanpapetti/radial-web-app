@@ -1,6 +1,6 @@
 # FROM ubuntu:18.04
+# FROM tiangolo/uwsgi-nginx-flask:python3.8
 FROM continuumio/miniconda3
-FROM tiangolo/uwsgi-nginx-flask:python3.8
 
 ENV LISTEN_PORT 9000
 EXPOSE 9000
