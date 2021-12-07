@@ -13,6 +13,8 @@ RUN pip3 install -r app/requirements.txt
 
 COPY entrypoint.sh .
 
+COPY nginx_config.conf /etc/nginx/conf.d/virtual.conf
+
 EXPOSE 80
 RUN chmod +x entrypoint.sh
 CMD  ["./entrypoint.sh"]

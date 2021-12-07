@@ -4,11 +4,11 @@
 
 <VirtualHost *:80>
     ServerName radial-app.com
-		ProxyPreserveHost On
-		ProxyRequests Off
-		ProxyPass / http://localhost:9000/
-		ProxyPassReverse / http://localhost:9000/
+	ProxyPreserveHost On
+	ProxyRequests Off
+	ProxyPass / http://0.0.0.0:9000/
+	ProxyPassReverse / http://0.0.0.0:9000/
 		
-		ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combined
+	ErrorLog logs/error.log
+    CustomLog logs/access.log combined
 </VirtualHost>
