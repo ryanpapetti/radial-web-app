@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# start nginx webserver, as by default is is stopped
 service nginx start
-# cd app
-uwsgi --ini /app/uwsgi.ini --master --uid www-data --gid www-data --lazy-apps
+
+# run our python code via uwsgi
+uwsgi --ini /var/www/radial-web-app/app/uwsgi.ini
