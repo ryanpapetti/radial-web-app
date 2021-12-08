@@ -1,19 +1,21 @@
-upstream django {
-    server unix:///var/www/radial-web-app/app.sock;
+upstream uwsgicluster {
+    server 127.0.0.1:8080;
 }
+
+# Configuration for Nginx
 server {
-    listen      9000;
-    server_name radial-app.com;
+    # Running port
+    listen 80;
 
-    client_max_body_size 75M;
-
-    location /static {
-        alias /var/www/radial-web-app/app/static;
-    }
-
+    # Proxying connections to application servers
     location / {
-        uwsgi_pass django;
-        include uwsgi_params;
-        proxy_read_timeout 120s;
+        include            uwsgi_params;
+        uwsgi_pass         uwsgicluster;
+
+        proxy_redirect     off;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Host $server_name;
     }
 }
