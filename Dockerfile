@@ -29,5 +29,9 @@ RUN chmod -R 755 /var/www/radial-web-app
 # ENV LISTEN_PORT 9000
 EXPOSE 9000
 
+RUN pwd
+
+RUN ls -l
+
 CMD  ["/var/www/radial-web-app/entrypoint.sh"]
 

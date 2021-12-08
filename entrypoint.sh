@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "beginning script for web app"
+
+pwd 
+
 # start nginx webserver, as by default is is stopped
 service nginx start
 

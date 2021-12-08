@@ -29,8 +29,8 @@ API_VERSION = "v1"
 SPOTIFY_API_URL = "{}/{}".format(SPOTIFY_API_BASE_URL, API_VERSION)
 
 # Server-side Parameters
-# CLIENT_SIDE_URL = "https://radial-app.com/"
-CLIENT_SIDE_URL = "http://127.0.0.1"
+CLIENT_SIDE_URL = "https://radial-app.com"
+# CLIENT_SIDE_URL = "http://127.0.0.1"
 # PORT = 9000
 # PORT = 8095
 REDIRECT_URI = "{}/callback".format(CLIENT_SIDE_URL)
@@ -150,7 +150,7 @@ def clustertracks():
     session['DEPLOYED_CLUSTERS_OBJS'] = {}
     # Combine profile and playlist data to display
     # return render_template("clusteringresults.html", stringified_playlists = json.dumps(prepared_playlists))
-    return redirect(url_for('clusteringresults', _external=True))
+    return redirect(url_for('clusteringresults'))
 
 
 @app.route("/clusteringresults")
