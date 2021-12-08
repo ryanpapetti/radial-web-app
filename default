@@ -14,5 +14,6 @@ server {
     location / {
         uwsgi_pass django;
         include uwsgi_params;
+        proxy_read_timeout 120s;
     }
 }
