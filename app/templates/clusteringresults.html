@@ -45,14 +45,14 @@
                 <div class="cluster row">
                     <h3> Cluster {{ key + 1 }}: {{total_organized_playlist_data[key]['size']}} Tracks ({{total_organized_playlist_data[key]['proportional_size']}}%)</h3>
                     <div class='col-sm-6 centroid'>
-                        <h4>Centroid Track</h4>
+                        <h4>Closest Track</h4>
                         <a href="{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['playable_url']}}" target="_blank"><img alt="album cover" class="hoverable centroid-img" style="border: 5px solid #ff002f" src="{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['album_cover_url']}}"></a>
                         <strong><span class="song-name truncate">{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['name']}} by {{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['artists']}}</span></strong>
    
     
                     </div>
                     <div class='col-sm-6'>
-                        <h4>First Five Tracks</h4>
+                        <h4>Five Tracks Closest to Centroid</h4>
                         <ol start="1">
                             {% for track_id, track_data in displayable_data[key].items() %}
                             <li><strong><span class="song-name truncate"> {{track_data['name']}} by {{track_data['artists']}}</span></strong></li>
