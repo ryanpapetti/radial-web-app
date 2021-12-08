@@ -41,23 +41,55 @@
             <div class="row">
                 <div class='col-sm-12 animated fadeIn'>
                     <h1 class="animated fadeIn">About Radial</h1>
-                    <!-- <h3 class="animated fadeIn delay-1s">A new way to explore your musical playlists with clustering</h3> -->
+                    <p>If you'd like to jump to the bottom to cluster click <a href="#cluster-submit-jumbotron"> here </a></p>
+                    
                 </div>
             </div>
+
+
+            
+            
             <div class="jumbotron jumbotron-fluid text-left">
                 <h2>You've never seen something like Radial before...</h2>
-                <p>Radial makes clustering fun by leveraging your Spotify data to group your tracks based on their structural similarity</p>
-                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">How So?</a>
-                <p class="text-right">1/4</p> 
+                <p>Radial makes clustering fun by leveraging your Spotify playlist data to group your tracks based on their audio similarity</p>
+                <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">How So?</a> -->
+                <p class="text-right">1/8</p> 
+            </div>
+            
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>Think of Radial as a musical exploration tool</h2>
+                <p> Radial helps you find hidden patterns in the music you have across playlists you've made, patterns that are guaranteed to be unique to you </p>
+                <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">How So?</a> -->
+                <p class="text-right">2/8</p> 
+            </div>
+
+
+
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>Radial works only with playlists you've created</h2>
+                <p> The app crawls through your playlists, gathers your unique tracks, and makes queries to Spotify's API to retrieve relevant metadata for our app. </p>
+                <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a> -->
+                <p class="text-right">3/8</p>  
+            </div>
+
+
+
+
+            <div class="jumbotron jumbotron-fluid text-left">
+                <h2>We ignore artist, album, language, and almost all demographic data </h2>
+                <p> The only demographic data for tracks that Radial use are the durations of the tracks. Radial ignores these data to focus on the audio similarity of the tracks. </p>
+                <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a> -->
+                <p class="text-right">4/8</p>  
             </div>
         
-        
-        
+
+
+
             <div class="jumbotron jumbotron-fluid text-left">
-                <h2>Defining Track Similarity</h2>
-                <p>How do we decide how two tracks are similar? We take collected track metadata from Spotify, scale them into a usable 0-1 range, and then use the standard distance formula. </p>
-                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a>
-                <p class="text-right">2/4</p>  
+                <h2>So how do we decide how two tracks are similar?</h2>
+                <p> We take scaled track metadata from Spotify and run a standard distance formula, the sum of squared differences between the tracks' features. </p>
+                <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a> -->
+                <p class="text-right">5/8</p>  
             </div>
 
 
@@ -68,25 +100,25 @@
                 <p>Once the data are structured accordingly, it is time to choose a clustering algorithm to group your data. We have two options for you</p>
                 <div class="container">
                     <div class="row">
-                        <div class="col-xs-6">
+                        <div class="col-xs-12">
                             <h4>Agglomerative Hierarchical</h4>
                             <p>
-                                A simple one comparison at a time. Utilizes "complete" linkage for maximum robustness in grouping
+                                Bottom-up tree-based clustering. Utilizes complete linkage for robustness. Find two tracks with smallest gap between the same feature, group and treat as one track - repeat until done.
                             </p>
 
                         </div>
-                        <div class="col-xs-6">
+                        <div class="col-xs-12">
                             <h4>KMeans</h4>
                             <p>
-                                Leverage the power of KMeans to group your tracks around common centroids. Traditional clustering approach
+                                Place k points (centroids) randomly within data. Assign each track to closest centroid via standard distance formula. Update centroids with average of data from all tracks assigned. Repeat until centroids no longer change.
                             </p>
 
                         </div>
                     </div>
 
                 </div>
-                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">Let's Pick One</a>
-                <p class="text-right">3/4</p>  
+                <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">Let's Pick One</a> -->
+                <p class="text-right">6/8</p>  
             </div>
  
             
@@ -96,14 +128,14 @@
                 <p>Once the data are structured accordingly, it is time to choose a clustering algorithm to group your data. We have two options for you</p>
                 <div class="container">
                     <div class="row">
-                        <div class="col-xs-4">
+                        <div class="col-xs-12">
                             <h4>Simple Clustering</h4>
                             <p>
-                                Suitable especially for total track size (&lt; 250). Produces five groups of tracks.
+                                Suitable for total track size (&lt; 250). Produces five groups of tracks. Groups are less homogenous.
                             </p>
 
                         </div>
-                        <div class="col-xs-4">
+                        <div class="col-xs-12">
                             <h4>Standard Clustering</h4>
                             <p>
                                 Suitable for all total track sizes. Produces nine groups of tracks.
@@ -111,18 +143,18 @@
 
                         </div>
 
-                        <div class="col-xs-4">
+                        <div class="col-xs-12">
                             <h4>Deep Clustering</h4>
                             <p>
-                                Suitable especially for large track collections (&gt; 1000) tracks. Produces thirteen groups of tracks. 
+                                Suitable for large track collections (&gt; 1,500) tracks. Produces thirteen groups of tracks. Groups may be more niche or smaller.
                             </p>
 
                         </div>
                     </div>
 
                 </div>
-                <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">Let's Pick One</a>
-                <p class="text-right">4/5</p>  
+                <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">Let's Pick One</a> -->
+                <p class="text-right">7/8</p>  
             </div>
 
 
@@ -131,9 +163,9 @@
 
 
         
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>Customize Your Clustering</h2>
-                <p>Radial makes clustering fun by leveraging your Spotify data to group your tracks based on their structural similarity</p>
+            <div class="jumbotron jumbotron-fluid text-left" id="cluster-submit-jumbotron">
+                <h2>Now it's your turn</h2>
+                <p>Select your algorithm and clustering type below</p>
 
 
                 <div class="container">
@@ -161,7 +193,7 @@
                         </form>
                 </div>
 
-                <p class="text-right">5/5</p>  
+                <p class="text-right">8/8</p>  
             </div>        
         
             
