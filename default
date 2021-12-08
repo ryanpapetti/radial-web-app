@@ -1,4 +1,4 @@
-upstream django {
+upstream backend {
     server unix:///var/www/radial-web-app/ops.sock;
 }
 server {
@@ -12,7 +12,7 @@ server {
     }
 
     location / {
-        uwsgi_pass  django;
+        uwsgi_pass backend;
         include uwsgi_params;
     }
 }

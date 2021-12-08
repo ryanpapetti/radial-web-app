@@ -15,21 +15,16 @@ RUN rm -rf /etc/nginx/sites-enabled/default
 COPY default /etc/nginx/sites-available/
 RUN ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
+COPY . .
+
 #  Create the environment:
 RUN pip3 install --upgrade pip
 RUN pip3 install -r app/requirements.txt
 RUN pip3 install uwsgi
 
-# COPY nginx_config.conf /etc/nginx/conf.d/virtual.conf
-
-# COPY flask-app-conf /etc/nginx/sites-enabled/default
-# COPY nginx_config.conf /etc/nginx/sites-enabled/default
-
 # chown www dir
 RUN chown -R www-data:www-data /var/www/radial-web-app
 RUN chmod -R 755 /var/www/radial-web-app
-
-COPY . .
 
 # ENV LISTEN_PORT 9000
 EXPOSE 9000
