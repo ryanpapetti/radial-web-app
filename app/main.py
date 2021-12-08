@@ -103,7 +103,7 @@ def callback():
     user.name = user_display_name
     session['VALID_USER'] = user
     app.logger.info(msg='Set user')
-    return redirect(f"https://{CLIENT_SIDE_URL}/appeducation")
+    return redirect(f"{CLIENT_SIDE_URL}/appeducation")
 
 
 
@@ -150,7 +150,7 @@ def clustertracks():
     session['DEPLOYED_CLUSTERS_OBJS'] = {}
     # Combine profile and playlist data to display
     # return render_template("clusteringresults.html", stringified_playlists = json.dumps(prepared_playlists))
-    return redirect(f"https://{CLIENT_SIDE_URL}/clusteringresults")
+    return redirect(f"{CLIENT_SIDE_URL}/clusteringresults")
 
 
 @app.route("/clusteringresults")
