@@ -1,5 +1,3 @@
-# FROM tiangolo/uwsgi-nginx-flask:python3.8
-
 
 FROM python:3.8-slim-buster
 USER root
@@ -28,10 +26,6 @@ RUN chmod -R 755 /var/www/radial-web-app
 
 # ENV LISTEN_PORT 9000
 EXPOSE 9000
-
-RUN pwd
-
-RUN ls -l
 
 CMD  ["/var/www/radial-web-app/entrypoint.sh"]
 
