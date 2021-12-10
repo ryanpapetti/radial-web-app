@@ -64,7 +64,7 @@
                         {% set key = (key | int) %}
 
 
-                    <a href="{{url_for('deploy_cluster',cluster_id=key, total_organized_playlist_data=total_organized_playlist_data, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters )}}" class="btn btn-primary btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="cluster-{{key}}">Publish Your Cluster </a>
+                    <a href="{{url_for('deploy_cluster',cluster_id=key, total_organized_playlist_data=total_organized_playlist_data, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters, _scheme='https' )}}" class="btn btn-primary btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="cluster-{{key}}">Publish Your Cluster </a>
   
 
                     <script type="text/javascript">
@@ -76,7 +76,7 @@
                                 var properAnchor = document.getElementById("cluster-{{key}}");
     
     
-                                window.open("{{url_for('deploy_cluster',cluster_id=key, total_organized_playlist_data=total_organized_playlist_data, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters )}}", "_blank");
+                                window.open("{{url_for('deploy_cluster',cluster_id=key, total_organized_playlist_data=total_organized_playlist_data, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters, _scheme='https' )}}", "_blank");
 
                                 // properAnchor.setAttribute('href',"https://open.spotify.com/playlist/{url_for('get_deployed_cluster_obj', deployed_cluster_objs=session['DEPLOYED_CLUSTER_OBJS'], cluster_id = key)}}");
 
