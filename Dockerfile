@@ -15,6 +15,8 @@ RUN ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
 COPY . .
 
+RUN mkdir app/app_data/user_data
+
 #  Create the environment:
 RUN pip3 install --upgrade pip
 RUN pip3 install -r app/requirements.txt
