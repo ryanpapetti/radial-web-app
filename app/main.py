@@ -1,4 +1,4 @@
-import json, random, uuid, sqlite3, re, ast, time
+import json, random, uuid, sqlite3, re, ast, time, logging
 from flask import Flask, request, redirect, render_template, url_for, session, g
 import requests
 from urllib.parse import quote
@@ -10,6 +10,10 @@ from utils import prime_user_from_access_token, prepare_playlists, prepare_data,
 # Visit this url to see all the steps, parameters, and expected response.
 
 app = Flask(__name__)
+
+handler = logging.StreamHandler()
+
+app.logger.addHandler(handler)
 
 random.seed(420)
 
