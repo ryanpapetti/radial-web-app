@@ -17,7 +17,7 @@ app.logger.addHandler(handler)
 
 random.seed(420)
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 if DEBUG_MODE:
     # Server-side Parameters
@@ -162,7 +162,7 @@ def callback():
 
     if user_id not in os.listdir(f"{USER_DATA_PATH}"):
         os.mkdir(f"{USER_DATA_PATH}/{user_id}")
-        
+
     app.logger.info(msg='Set user')
 
 
@@ -237,7 +237,6 @@ def clustertracks():
     cursor.execute(insert_statement, insertable_values)
     db_connection.commit()
 
-
     # session['PREPARED_PLAYLISTS'] = prepared_playlists   
 
     # session['DEPLOYED_CLUSTERS_OBJS'] = {}
@@ -298,8 +297,8 @@ def deploy_cluster(cluster_id):
         total_organized_playlist_data = json.load(reader) 
     
     # total_organized_playlist_data = ast.literal_eval()
-    chosen_algorithm = request.args.get('chosen_algorithm')
-    chosen_clusters = int(request.args.get('chosen_clusters'))
+    chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
+    chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
 
 
     retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
@@ -347,5 +346,5 @@ if __name__ == "__main__":
     if DEBUG_MODE:
         app.run(debug=True, port=PORT)
     else:
-        app.run(host = '0.0.0.0', debug=True)
+        app.run(host = '0.0.0.0')
         import sys; sys.exit(0)
