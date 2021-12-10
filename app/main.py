@@ -1,4 +1,4 @@
-import json, random, uuid, sqlite3, re, ast, time, logging
+import json, random, uuid, sqlite3, time, logging, os
 from flask import Flask, request, redirect, render_template, url_for, session, g
 import requests
 from urllib.parse import quote
@@ -17,7 +17,7 @@ app.logger.addHandler(handler)
 
 random.seed(420)
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 if DEBUG_MODE:
     # Server-side Parameters
@@ -36,10 +36,9 @@ else:
 # app.config['SESSION_TYPE'] = 'filesystem'
 # app.secret_key = str(uuid.uuid4())
 # Session(app)
-DATABASE = 'basic_user_credentials.db'
-DB_CREATION_SCRIPT = 'create_radial_tables.sql'
-# DB_CONN = sqlite3.connect(DATABASE)
-
+DATABASE = 'app_data/basic_user_credentials.db'
+DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
+USER_DATA_PATH = 'app_data/user_data'
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -160,6 +159,10 @@ def callback():
         cursor.execute(insert_statement, insertable_values)
     
     db_connection.commit()
+
+    if user_id not in os.listdir(f"{USER_DATA_PATH}"):
+        os.mkdir(f"{USER_DATA_PATH}/{user_id}")
+        
     app.logger.info(msg='Set user')
 
 
@@ -194,18 +197,19 @@ def clustertracks():
 
     # app.logger.info(msg='Auth header')
     app.logger.info(msg=f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id};')
-    retrived_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id};').fetchone()[:3]
+    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id};').fetchone()[:3]
 
-    app.logger.info(f"gathered the following from the db: {retrived_id}, {retrieved_display_name}, {retrieved_access_token}")
+    app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")
 
     # auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
-    user_obj = prime_user_from_access_token(retrived_id, retrieved_access_token)
+    user_obj = prime_user_from_access_token(retrieved_id, retrieved_access_token)
 
     #gather data
 
     app.logger.info(msg='preparing data')
     user_prepared_data = prepare_data(user_obj)
+    user_prepared_data.to_csv(f'app_data/user_data/{retrieved_id}/user_prepared_data.csv')
 
     app.logger.info(msg='data prepared')
     # app.logger.info(msg=user_prepared_data)
@@ -213,17 +217,21 @@ def clustertracks():
 
 
     labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
+    labelled_data.to_csv(f'app_data/user_data/{retrieved_id}/labelled_data.csv')
+
 
     # session['LABELLED_DATA'] = labelled_data
 
     app.logger.info(msg='data clustered')
 
     prepared_playlists = prepare_playlists(user_obj,labelled_data)
+    with open(f'app_data/user_data/{retrieved_id}/prepared_playlists.json','w') as writer:
+        json.dump(prepared_playlists,writer)
     app.logger.info(msg='ready for upload')
 
     #FUNCTION HERE TO ADD USER INFO TO TABLE IN DB
     insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(?,?, ?, ?)'
-    insertable_values = (str(uuid.uuid4()), retrived_id, chosen_algorithm,chosen_clusters)
+    insertable_values = (str(uuid.uuid4()), retrieved_id, chosen_algorithm,chosen_clusters)
     db_connection = get_db()
     cursor = db_connection.cursor()
     cursor.execute(insert_statement, insertable_values)
@@ -236,7 +244,7 @@ def clustertracks():
     # Combine profile and playlist data to display
     # return render_template("clusteringresults.html", stringified_playlists = json.dumps(prepared_playlists))
     # return redirect(f"{CLIENT_SIDE_URL}/clusteringresults")
-    return redirect(url_for('clusteringresults', spotify_user_id = retrived_id, prepared_playlists = json.dumps(prepared_playlists), chosen_clusters = chosen_clusters, chosen_algorithm = chosen_algorithm, _scheme=SCHEME, _external=True))
+    return redirect(url_for('clusteringresults', spotify_user_id = retrieved_id, chosen_clusters = chosen_clusters, chosen_algorithm = chosen_algorithm, _scheme=SCHEME, _external=True))
 
 
 
@@ -255,18 +263,19 @@ def clustertracks():
 def clusteringresults():
     app.logger.info(f"{request.args}")
     spotify_user_id = request.args.get('spotify_user_id')
-    json_decoding_pattern = re.compile('(?<!\\\\)\'')
-    raw_prepared_playlists = request.args.get('prepared_playlists')
-    new_str = json_decoding_pattern.sub('\"',raw_prepared_playlists)
-    prepared_playlists = json.loads(new_str)
+    with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
+        prepared_playlists = json.load(reader) 
     chosen_clusters = int(request.args.get('chosen_clusters'))
     chosen_algorithm = request.args.get('chosen_algorithm')
 
     # prepared_playlists = session['PREPARED_PLAYLISTS']
-    retrived_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
+    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
     auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
     displayable_data, total_organized_playlist_data = organize_cluster_data_for_display(auth_header,prepared_playlists)
+
+    with open(f'app_data/user_data/{retrieved_id}/total_organized_playlist_data.json','w') as writer:
+        json.dump(total_organized_playlist_data,writer)
 
     # app.logger.info(f'deployed clusters already exist: {"DEPLOYED_CLUSTERS_OBJS" in session}')
 
@@ -284,26 +293,22 @@ def deploy_cluster(cluster_id):
     
     #weird ampsersand issues
 
-    spotify_user_id = request.args.get('spotify_user_id' if 'spotify_user_id' in request.args else 'amp;spotify_user_id')
-    
-    json_decoding_pattern = re.compile('(?<!\\\\)\'')
-    raw_total_organized_playlist_data = request.args.get('total_organized_playlist_data' if 'total_organized_playlist_data' in request.args else 'amp;total_organized_playlist_data')
-    new_str = json_decoding_pattern.sub('\"',raw_total_organized_playlist_data)
-    total_organized_playlist_data = json.loads(new_str)
-    
+    spotify_user_id = request.args.get('spotify_user_id')
+    with open(f'{USER_DATA_PATH}/{spotify_user_id}/total_organized_playlist_data.json') as reader:
+        total_organized_playlist_data = json.load(reader) 
     
     # total_organized_playlist_data = ast.literal_eval()
-    chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
-    chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
+    chosen_algorithm = request.args.get('chosen_algorithm')
+    chosen_clusters = int(request.args.get('chosen_clusters'))
 
 
-    retrived_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
+    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
 
-    app.logger.info(f"gathered the following from the db: {retrived_id}, {retrieved_display_name}, {retrieved_access_token}")
+    app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")
 
     # auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
-    specified_user = prime_user_from_access_token(retrived_id, retrieved_access_token)
+    specified_user = prime_user_from_access_token(retrieved_id, retrieved_access_token)
 
 
     # specified_user = session['VALID_USER']

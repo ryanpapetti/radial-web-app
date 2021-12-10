@@ -3,3 +3,4 @@ __pycache__/
 */__pycache__/
 flask_session/
 *.db
+app/app_data/user_data/
