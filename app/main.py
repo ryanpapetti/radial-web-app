@@ -17,7 +17,7 @@ app.logger.addHandler(handler)
 
 random.seed(420)
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 if DEBUG_MODE:
     # Server-side Parameters
@@ -274,7 +274,7 @@ def clusteringresults():
     chosen_algorithm = request.args.get('chosen_algorithm')
 
     # prepared_playlists = session['PREPARED_PLAYLISTS']
-    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
+    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}"').fetchone()[:3]
     auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
     displayable_data, total_organized_playlist_data = organize_cluster_data_for_display(auth_header,prepared_playlists)
@@ -307,7 +307,7 @@ def deploy_cluster(cluster_id):
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
 
 
-    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
+    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}"').fetchone()[:3]
 
     app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")
 

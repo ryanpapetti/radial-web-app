@@ -63,7 +63,6 @@
 
                         {% set key = (key | int) %}
 
-                        {{url_for('deploy_cluster',cluster_id=key, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters)}}
 
                     <a href="{{url_for('deploy_cluster',cluster_id=key, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters)}}" class="btn btn-primary btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="cluster-{{key}}">Publish Your Cluster </a>
   
