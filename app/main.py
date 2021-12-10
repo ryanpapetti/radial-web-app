@@ -10,6 +10,7 @@ from utils import prime_user_from_access_token, prepare_playlists, prepare_data,
 # Visit this url to see all the steps, parameters, and expected response.
 
 app = Flask(__name__)
+
 random.seed(420)
 
 DEBUG_MODE = False
