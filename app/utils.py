@@ -1,18 +1,39 @@
-import json, time, re, logging, random
-from flask import current_app, jsonify
+import json, time, re, logging, random, requests 
+from flask import current_app
 import requests
-from urllib.parse import quote
-import logging, pandas as pd
 from scipy.cluster.hierarchy import cut_tree
-from sklearn import cluster
 from sklearn.cluster import KMeans
-
 from scripts import SpotifyUser, Contacter
+
+
+AUTH_HASH = "Basic N2VjNDAzOGRlMTE4NGUyZmIwYTFjYWYxMzM1MmUyOTU6MThmYTU5ZTBkNDYxNGMxMzlmNGM2MTAyZjViYzk2NWE="
 
 random.seed(420)
 
 # logging.formatter
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def refreshTheToken(refreshToken):
+    auth_header = {'Authorization': f'{AUTH_HASH}'}
+    logging.info(auth_header)
+    
+    data = {'grant_type': 'refresh_token', 'refresh_token': refreshToken}
+
+
+    response = requests.post('https://accounts.spotify.com/api/token', data=data, headers=auth_header)
+
+    spotifyToken = response.json()
+
+    logging.info(spotifyToken)
+
+    #NOW ADD TO DATABASE: INSERT INTO 
+
+    # Place the expiration time (current time + almost an hour), and access token into the json
+    spotifyState = {'spotify': 'prod', 'expiresAt': int(time.time()) + 3200, 'accessToken': spotifyToken['access_token']}
+    return spotifyState
+
+def token_needs_refresh(db_connection, spotify_user_id):
+    pass
 
 def gather_cluster_size_from_submission(submission):
     pattern = r'\d+'
@@ -75,7 +96,7 @@ def get_cluster_playlist_metadata(clustered_tracks):
         centroid_track = tracks_to_be_displayed[0]
         playlist_size = len(tracks)
         playlist_proportion = round(100 * round(playlist_size/total_tracks, 3), 3)
-        organized_playlist_data = {'centroid_track':centroid_track, 'displayable_tracks':tracks_to_be_displayed, 'size': format(playlist_size, ","), 'proportional_size': playlist_proportion}
+        organized_playlist_data = {'centroid_track':centroid_track, 'displayable_tracks':tracks_to_be_displayed, 'all_tracks':tracks, 'size': format(playlist_size, ","), 'proportional_size': playlist_proportion}
         total_organized_playlist_data[playlist] = organized_playlist_data
     return total_organized_playlist_data
 

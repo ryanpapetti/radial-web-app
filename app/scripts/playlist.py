@@ -58,7 +58,6 @@ class Playlist:
                 self.raw_playlist_items.extend(track_data['items'])
             except:
                 logging.info(track_data)
-                logging.info(track_data)
                 logging.info(track_data.keys())
                 raise ValueError('Unable to extend track_data')
             total_queries_made +=1
@@ -90,7 +89,13 @@ class Playlist:
         return organized_data
     
     def convert_raw_track_items(self):
-        assert self.raw_playlist_items
+        try:
+            assert self.raw_playlist_items
+        
+        except AssertionError:
+            logging.info(f"RAW PLAYLIST ITEMS: {self.raw_playlist_items}")
+
+
         #goal is to Track() all items and make a new instance variable
         self.tracks = [Track.create_track_from_json(item) for item in self.raw_playlist_items]
     

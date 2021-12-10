@@ -1,10 +1,10 @@
-import json, random
-from flask import Flask, request, redirect, render_template, url_for, session
+import json, random, uuid, sqlite3, re, ast, time
+from flask import Flask, request, redirect, render_template, url_for, session, g
 import requests
 from urllib.parse import quote
 from flask_session import Session
 
-from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, load_proper_cluster_button
+from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, refreshTheToken
 
 # Authentication Steps, paramaters, and responses are defined at https://developer.spotify.com/web-api/authorization-guide/
 # Visit this url to see all the steps, parameters, and expected response.
@@ -12,14 +12,56 @@ from utils import prime_user_from_access_token, prepare_playlists, prepare_data,
 app = Flask(__name__)
 random.seed(420)
 
+DEBUG_MODE = True
 
-app.config['SESSION_TYPE'] = 'filesystem'
-app.secret_key = 'l2345jh34kj5hj5g34253458345485487trhgufhgdhsjk'
-Session(app)
+if DEBUG_MODE:
+    # Server-side Parameters
+    CLIENT_SIDE_URL = "http://127.0.0.1"
+    # PORT = 9000
+    PORT = 8095
+    REDIRECT_URI = "{}:{}/callback".format(CLIENT_SIDE_URL,PORT)
+    SCHEME='http'
+else:
+    CLIENT_SIDE_URL = "https://radial-app.com"
+    REDIRECT_URI = "{}/callback".format(CLIENT_SIDE_URL)
+    SCHEME='https'
+
+
+# app.config["SESSION_PERMANENT"] = False
+# app.config['SESSION_TYPE'] = 'filesystem'
+# app.secret_key = str(uuid.uuid4())
+# Session(app)
+DATABASE = 'basic_user_credentials.db'
+DB_CREATION_SCRIPT = 'create_radial_tables.sql'
+# DB_CONN = sqlite3.connect(DATABASE)
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+    return db
+
+
+def init_db():
+    with app.app_context():
+        db = get_db()
+        with app.open_resource(DB_CREATION_SCRIPT, mode='r') as f:
+            db.cursor().executescript(f.read())
+        db.commit()
+
+
+init_db()
+
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
 #  Client Keys
 CLIENT_ID = "7ec4038de1184e2fb0a1caf13352e295"
 CLIENT_SECRET = '18fa59e0d4614c139f4c6102f5bc965a'
-# AUTH_HASH = "Basic N2VjNDAzOGRlMTE4NGUyZmIwYTFjYWYxMzM1MmUyOTU6MThmYTU5ZTBkNDYxNGMxMzlmNGM2MTAyZjViYzk2NWE="
 
 # Spotify URLS
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
@@ -28,18 +70,9 @@ SPOTIFY_API_BASE_URL = "https://api.spotify.com"
 API_VERSION = "v1"
 SPOTIFY_API_URL = "{}/{}".format(SPOTIFY_API_BASE_URL, API_VERSION)
 
-# Server-side Parameters
-CLIENT_SIDE_URL = "https://radial-app.com"
-# CLIENT_SIDE_URL = "http://127.0.0.1"
-# PORT = 9000
-# PORT = 8095
-REDIRECT_URI = "{}/callback".format(CLIENT_SIDE_URL)
-# REDIRECT_URI = "{}:{}/callback".format(CLIENT_SIDE_URL,PORT)
+
 
 SCOPE = "user-read-recently-played user-top-read  playlist-modify-public playlist-modify-private user-library-modify playlist-read-private user-read-email user-read-private user-library-read playlist-read-collaborative"
-# STATE = ""
-# SHOW_DIALOG_bool = True
-# SHOW_DIALOG_str = str(SHOW_DIALOG_bool).lower()
 
 auth_query_parameters = {
     "response_type": "code",
@@ -56,7 +89,8 @@ def index():
 
 @app.route("/appeducation")
 def appeducation():
-    return render_template('appeducation.html')
+    spotify_user_id = request.args.get('spotify_user_id')
+    return render_template('appeducation.html', spotify_user_id = spotify_user_id)
 
 
 @app.route("/authenticateuser")
@@ -83,13 +117,12 @@ def callback():
     # Auth Step 5: Tokens are Returned to Application
     response_data = json.loads(post_request.text)
     access_token = response_data["access_token"]
-    # refresh_token = response_data["refresh_token"]
+    refresh_token = response_data["refresh_token"]
     # token_type = response_data["token_type"]
-    # expires_in = response_data["expires_in"]
+    expires_in = response_data["expires_in"]
 
     # Auth Step 6: Use the access token to access Spotify API
     authorization_header = {"Authorization": "Bearer {}".format(access_token)}
-    session['VALID_AUTH_HEADER'] = authorization_header
 
     # Get profile data
     user_profile_api_endpoint = "{}/me".format(SPOTIFY_API_URL)
@@ -98,40 +131,76 @@ def callback():
     user_id = profile_data['id']
     user_display_name = profile_data['display_name']
 
-    #make user 
-    user = prime_user_from_access_token(user_id, access_token)
-    user.name = user_display_name
-    session['VALID_USER'] = user
+
+    #FUNCTION HERE TO ADD USER INFO TO TABLE IN DB
+    db_connection = get_db()
+    cursor = db_connection.cursor()
+    verify_prior_entry = cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={user_id} ORDER BY AccessExpires DESC;').fetchone()
+    if verify_prior_entry:
+
+        recorded_expiration = verify_prior_entry[-1]
+        if int(time.time()) + 3200 > int(recorded_expiration):
+            #refresh token
+            refresh_token_data = refreshTheToken(refresh_token)
+            access_token = refresh_token_data['accessToken']
+            expires_in = refresh_token_data['expiresAt']
+
+        replace_statement = 'REPLACE INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?)'
+        replaceable_values = (user_id,user_display_name,access_token, refresh_token, expires_in)
+        cursor.execute(replace_statement, replaceable_values)
+    
+    else:
+        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?)'
+        insertable_values = (user_id,user_display_name,access_token, refresh_token, expires_in)
+        cursor.execute(insert_statement, insertable_values)
+    
+    db_connection.commit()
     app.logger.info(msg='Set user')
-    return redirect(f"{CLIENT_SIDE_URL}/appeducation")
+
+
+    #make user 
+    # user = prime_user_from_access_token(user_id, access_token)
+    # user.name = user_display_name
+    # session['VALID_USER'] = user
+    # return redirect(f"{CLIENT_SIDE_URL}/appeducation")
+    # return render_template('appeducation.html', spotify_user_id = user_id)
+    proper_url = url_for('appeducation', spotify_user_id = user_id, _scheme=SCHEME, _external=True)
+    app.logger.info(proper_url)
+    return redirect(proper_url)
 
 
 
 
 @app.route('/clustertracks', methods=['POST'])
 def clustertracks():
+    app.logger.info(f"{request.form}")
+    app.logger.info(f"{request.args}")
+    spotify_user_id = request.args.get('spotify_user_id')
     algorithm = request.form.get('algorithm')
     desired_clusters = request.form.get('desired_clusters')
-
-    app.logger.info(msg=f'algorithm: {algorithm}')
-    app.logger.info(msg=f'clusters: {desired_clusters}')
-
-    app.logger.info(msg='Auth header')
-    app.logger.info(msg=f"{session['VALID_AUTH_HEADER']}")
-
-    #gather data
-    app.logger.info(msg='Preparing data')
-    app.logger.info(msg=f"{session['VALID_USER']}")
     chosen_algorithm = algorithm
     chosen_clusters = gather_cluster_size_from_submission(desired_clusters)
-    session['ALGORITHM_CHOSEN'] = chosen_algorithm
-    session['CLUSTERING_CHOSEN'] = chosen_clusters
-    
     app.logger.info(msg='cluster size determined')
+    # session['ALGORITHM_CHOSEN'] = chosen_algorithm
+    # session['CLUSTERING_CHOSEN'] = chosen_clusters
 
+    app.logger.info(msg=f'algorithm: {chosen_algorithm}')
+    app.logger.info(msg=f'clusters: {chosen_clusters}')
+
+    # app.logger.info(msg='Auth header')
+    app.logger.info(msg=f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id};')
+    retrived_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id};').fetchone()[:3]
+
+    app.logger.info(f"gathered the following from the db: {retrived_id}, {retrieved_display_name}, {retrieved_access_token}")
+
+    # auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
+
+    user_obj = prime_user_from_access_token(retrived_id, retrieved_access_token)
+
+    #gather data
 
     app.logger.info(msg='preparing data')
-    user_prepared_data = prepare_data(session['VALID_USER'])
+    user_prepared_data = prepare_data(user_obj)
 
     app.logger.info(msg='data prepared')
     # app.logger.info(msg=user_prepared_data)
@@ -140,50 +209,124 @@ def clustertracks():
 
     labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
 
-    session['LABELLED_DATA'] = labelled_data
+    # session['LABELLED_DATA'] = labelled_data
 
     app.logger.info(msg='data clustered')
-    prepared_playlists = prepare_playlists(session['VALID_USER'],labelled_data)
+
+    prepared_playlists = prepare_playlists(user_obj,labelled_data)
     app.logger.info(msg='ready for upload')
-    session['PREPARED_PLAYLISTS'] = prepared_playlists     
-    app.logger.info(msg='added as session variable')
-    session['DEPLOYED_CLUSTERS_OBJS'] = {}
+
+    #FUNCTION HERE TO ADD USER INFO TO TABLE IN DB
+    insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(?,?, ?, ?)'
+    insertable_values = (str(uuid.uuid4()), retrived_id, chosen_algorithm,chosen_clusters)
+    db_connection = get_db()
+    cursor = db_connection.cursor()
+    cursor.execute(insert_statement, insertable_values)
+    db_connection.commit()
+
+
+    # session['PREPARED_PLAYLISTS'] = prepared_playlists   
+
+    # session['DEPLOYED_CLUSTERS_OBJS'] = {}
     # Combine profile and playlist data to display
     # return render_template("clusteringresults.html", stringified_playlists = json.dumps(prepared_playlists))
-    return redirect(f"{CLIENT_SIDE_URL}/clusteringresults")
+    # return redirect(f"{CLIENT_SIDE_URL}/clusteringresults")
+    return redirect(url_for('clusteringresults', spotify_user_id = retrived_id, prepared_playlists = json.dumps(prepared_playlists), chosen_clusters = chosen_clusters, chosen_algorithm = chosen_algorithm, _scheme=SCHEME, _external=True))
+
+
+
+
+# @app.route('/loading')
+# def loading():
+#     pass
+#     # return render_template('loading-page.html')
+
+
+
+
 
 
 @app.route("/clusteringresults")
 def clusteringresults():
-    prepared_playlists = session['PREPARED_PLAYLISTS']
-    displayable_data, total_organized_playlist_data = organize_cluster_data_for_display(session['VALID_AUTH_HEADER'],prepared_playlists)
+    app.logger.info(f"{request.args}")
+    spotify_user_id = request.args.get('spotify_user_id')
+    json_decoding_pattern = re.compile('(?<!\\\\)\'')
+    raw_prepared_playlists = request.args.get('prepared_playlists')
+    new_str = json_decoding_pattern.sub('\"',raw_prepared_playlists)
+    prepared_playlists = json.loads(new_str)
+    chosen_clusters = int(request.args.get('chosen_clusters'))
+    chosen_algorithm = request.args.get('chosen_algorithm')
 
-    app.logger.info(f'deployed clusters already exist: {"DEPLOYED_CLUSTERS_OBJS" in session}')
+    # prepared_playlists = session['PREPARED_PLAYLISTS']
+    retrived_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
+    auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
-    if "DEPLOYED_CLUSTERS_OBJS" in session:
-        app.logger.info(f"{session['DEPLOYED_CLUSTERS_OBJS']}")
+    displayable_data, total_organized_playlist_data = organize_cluster_data_for_display(auth_header,prepared_playlists)
 
-    return render_template("clusteringresults.html", displayable_data = displayable_data, total_organized_playlist_data = total_organized_playlist_data, chosen_algorithm = session['ALGORITHM_CHOSEN'], chosen_clusters = session['CLUSTERING_CHOSEN'], button_chooser=load_proper_cluster_button)
+    # app.logger.info(f'deployed clusters already exist: {"DEPLOYED_CLUSTERS_OBJS" in session}')
+
+    # if "DEPLOYED_CLUSTERS_OBJS" in session:
+    #     app.logger.info(f"{session['DEPLOYED_CLUSTERS_OBJS']}")
+
+    return render_template("clusteringresults.html", displayable_data = displayable_data, total_organized_playlist_data = total_organized_playlist_data, chosen_algorithm = chosen_algorithm, chosen_clusters = chosen_clusters, spotify_user_id = spotify_user_id)
 
 
 @app.route("/clusteringresults#<cluster_id>")
 def deploy_cluster(cluster_id):
-    specified_user = session['VALID_USER']
-    app.logger.info(f'{session["PREPARED_PLAYLISTS"].keys()}')
-    tracks_to_add = session['PREPARED_PLAYLISTS'][int(cluster_id)]
-    specified_algorithm = session['ALGORITHM_CHOSEN']
-    specified_clusters = session['CLUSTERING_CHOSEN']
+    app.logger.info(f"cluster id passed: {cluster_id}")
+    app.logger.info(f"get params: {request.args.keys()}")
+    app.logger.info(f"get params values: {list(request.args.values())}")
+    
+    #weird ampsersand issues
+
+    spotify_user_id = request.args.get('spotify_user_id' if 'spotify_user_id' in request.args else 'amp;spotify_user_id')
+    
+    json_decoding_pattern = re.compile('(?<!\\\\)\'')
+    raw_total_organized_playlist_data = request.args.get('total_organized_playlist_data' if 'total_organized_playlist_data' in request.args else 'amp;total_organized_playlist_data')
+    new_str = json_decoding_pattern.sub('\"',raw_total_organized_playlist_data)
+    total_organized_playlist_data = json.loads(new_str)
+    
+    
+    # total_organized_playlist_data = ast.literal_eval()
+    chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
+    chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
+
+
+    retrived_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id}').fetchone()[:3]
+
+    app.logger.info(f"gathered the following from the db: {retrived_id}, {retrieved_display_name}, {retrieved_access_token}")
+
+    # auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
+
+    specified_user = prime_user_from_access_token(retrived_id, retrieved_access_token)
+
+
+    # specified_user = session['VALID_USER']
+    app.logger.info(f'{total_organized_playlist_data.keys()}')
+    try:
+        # tracks_to_add = session['PREPARED_PLAYLISTS'][int(cluster_id)]
+        tracks_to_add = total_organized_playlist_data[int(cluster_id)]['all_tracks']
+    
+    except KeyError:
+        tracks_to_add = total_organized_playlist_data[cluster_id]['all_tracks']
+    
+        
+        
+    # specified_algorithm = session['ALGORITHM_CHOSEN']
+    specified_algorithm = chosen_algorithm
+    # specified_clusters = session['CLUSTERING_CHOSEN']
+    specified_clusters = chosen_clusters
     clustering_type = f"{specified_algorithm.title()} ({specified_clusters})"
     playlist_obj = specified_user.deploy_single_cluster_playlist(tracks_to_add, int(cluster_id) + 1, clustering_type)
+    playlist_url = f'https://open.spotify.com/playlist/{playlist_obj.playlist_id}'
 
     #add description
     # playlist_obj.update_playlist_metadata(specified_user,{'description':playlist_obj.description})
     # return render_template("clusteringresults.html", displayable_data = displayable_data, total_organized_playlist_data = total_organized_playlist_data, chosen_algorithm = session['ALGORITHM_CHOSEN'], chosen_clusters = session['CLUSTERING_CHOSEN'])
-    playlist_url = f'https://open.spotify.com/playlist/{playlist_obj.playlist_id}'
-    if 'DEPLOYED_CLUSTERS_OBJS' in session:
-        session['DEPLOYED_CLUSTERS_OBJS'][int(cluster_id)] = playlist_obj
-    else:
-        session['DEPLOYED_CLUSTERS_OBJS'] = {int(cluster_id): playlist_obj}
+    # if 'DEPLOYED_CLUSTERS_OBJS' in session:
+    #     session['DEPLOYED_CLUSTERS_OBJS'][int(cluster_id)] = playlist_obj
+    # else:
+    #     session['DEPLOYED_CLUSTERS_OBJS'] = {int(cluster_id): playlist_obj}
     return redirect(playlist_url)
     
 
@@ -191,6 +334,8 @@ def deploy_cluster(cluster_id):
 
 
 if __name__ == "__main__":
-    # app.run(debug=True, port=PORT)
-    app.run(host = '0.0.0.0', debug=True)
-    import sys; sys.exit(0)
+    if DEBUG_MODE:
+        app.run(debug=True, port=PORT)
+    else:
+        app.run(host = '0.0.0.0', debug=True)
+        import sys; sys.exit(0)

@@ -37,44 +37,35 @@
             <h3 class='text-center'>You Chose {{chosen_algorithm}} with {{chosen_clusters}} Clusters </h3>
 
             {% for key in displayable_data.keys() %}
+            
 
 
             <div class='jumbotron jumbotron-fluid'>
                 <div class = "clusters-container container">
                     
                 <div class="cluster row">
-                    <h3> Cluster {{ key + 1 }}: {{total_organized_playlist_data[key]['size']}} Tracks ({{total_organized_playlist_data[key]['proportional_size']}}%)</h3>
+                    <h3> Cluster {{ (key | int) + 1 }}: {{total_organized_playlist_data[key]['size']}} Tracks ({{total_organized_playlist_data[key]['proportional_size']}}%)</h3>
                     <div class='col-sm-6 centroid'>
                         <h4>Closest Track</h4>
                         <a href="{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['playable_url']}}" target="_blank"><img alt="album cover" class="hoverable centroid-img" style="border: 5px solid #ff002f" src="{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['album_cover_url']}}"></a>
                         <strong><span class="song-name truncate">{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['name']}} by {{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['artists']}}</span></strong>
    
-    
-                    </div>
-                    <div class='col-sm-6'>
-                        <h4>Five Tracks Closest to Centroid</h4>
+                        
+                        <div class='col-sm-6'>
+                            <h4>Five Tracks Closest to Centroid</h4>
+                        </div>
                         <ol start="1">
                             {% for track_id, track_data in displayable_data[key].items() %}
                             <li><strong><span class="song-name truncate"> {{track_data['name']}} by {{track_data['artists']}}</span></strong></li>
                             {% endfor %}
                         </ol>
+                        
+
+                        {% set key = (key | int) %}
 
 
-
-                    {% set key = (key | int) %}
-                    
-                    {% set properButton = button_chooser(session,key) %}
-                    
-
-                    {% if properButton == 'deploy' %}
-                    <a href="{{url_for('deploy_cluster',cluster_id=key)}}" class="btn btn-primary btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="cluster-{{key}}">Deploy Your Cluster </a>
-                    
-                    {% else %}
-
-                    <a href="https://open.spotify.com/playlist/{url_for('get_deployed_cluster_obj', deployed_cluster_objs=session['DEPLOYED_CLUSTER_OBJS'], cluster_id = key)}}" class="btn btn-success btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="deployed-{{key}}">Listen to Your Cluster </a> 
-
-                    {% endif %}
-                    <!-- <i class="fa fa-spotify" aria-hidden="true"></i> -->
+                    <a href="{{url_for('deploy_cluster',cluster_id=key, total_organized_playlist_data=total_organized_playlist_data, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters )}}" class="btn btn-primary btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="cluster-{{key}}">Publish Your Cluster </a>
+  
 
                     <script type="text/javascript">
                         $("a#cluster-{{key}}").on("click",function(){
@@ -85,9 +76,11 @@
                                 var properAnchor = document.getElementById("cluster-{{key}}");
     
     
-                                window.open("{{url_for('deploy_cluster',cluster_id=key)}}", "_blank");
+                                window.open("{{url_for('deploy_cluster',cluster_id=key, total_organized_playlist_data=total_organized_playlist_data, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters )}}", "_blank");
 
-                                properAnchor.setAttribute('href',"https://open.spotify.com/playlist/{url_for('get_deployed_cluster_obj', deployed_cluster_objs=session['DEPLOYED_CLUSTER_OBJS'], cluster_id = key)}}");
+                                // properAnchor.setAttribute('href',"https://open.spotify.com/playlist/{url_for('get_deployed_cluster_obj', deployed_cluster_objs=session['DEPLOYED_CLUSTER_OBJS'], cluster_id = key)}}");
+
+                                properAnchor.setAttribute('href',window.location.href);
     
 
                                 properAnchor.setAttribute('id',"deployed-{{key}}");
@@ -106,8 +99,12 @@
 
                         $("a#deployed-{{key}}").on("click",function(){
                             
+                            
      
-                            window.open("https://open.spotify.com/playlist/{url_for('get_deployed_cluster_obj', deployed_cluster_objs=session['DEPLOYED_CLUSTER_OBJS'], cluster_id = key)}}", "_blank");
+                            // window.open("https://open.spotify.com/playlist/{url_for('get_deployed_cluster_obj', deployed_cluster_objs=session['DEPLOYED_CLUSTER_OBJS'], cluster_id = key)}}", "_blank");
+                            var properAnchor = document.getElementById("deployed-{{key}}");
+                            window.open(properAnchor.location.href, "_blank");
+                            
 
                             
                         });
@@ -123,13 +120,13 @@
             {% endfor %}
 
 
-            <a href="{{url_for('appeducation')}}" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button" id="start-over-button">Try Another Set </a> 
+            <a href="{{url_for('index')}}" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button" id="start-over-button">Try Another Clustering </a> 
 
             <script type="text/javascript">
             $("a#start-over-button").on("click",function(){
                             
      
-                window.open("{{url_for('appeducation')}}", "_blank");
+                window.open("{{url_for('index')}}", "_blank");
 
                 
             });
