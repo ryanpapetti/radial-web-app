@@ -12,7 +12,7 @@ from utils import prime_user_from_access_token, prepare_playlists, prepare_data,
 app = Flask(__name__)
 random.seed(420)
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 if DEBUG_MODE:
     # Server-side Parameters
