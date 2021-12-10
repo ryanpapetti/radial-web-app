@@ -17,7 +17,7 @@ app.logger.addHandler(handler)
 
 random.seed(420)
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 if DEBUG_MODE:
     # Server-side Parameters
@@ -164,7 +164,7 @@ def callback():
         cursor.execute(insert_statement, insertable_values)
     
     db_connection.commit()
-    close_connection()
+    # close_connection()
 
     if user_id not in os.listdir(f"{USER_DATA_PATH}"):
         os.mkdir(f"{USER_DATA_PATH}/{user_id}")
@@ -201,9 +201,8 @@ def clustertracks():
     app.logger.info(msg=f'algorithm: {chosen_algorithm}')
     app.logger.info(msg=f'clusters: {chosen_clusters}')
 
-    # app.logger.info(msg='Auth header')
-    app.logger.info(msg=f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id};')
-    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={spotify_user_id};').fetchone()[:3]
+    app.logger.info(msg=f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
 
     app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")
 
@@ -242,7 +241,7 @@ def clustertracks():
     cursor = db_connection.cursor()
     cursor.execute(insert_statement, insertable_values)
     db_connection.commit()
-    close_connection()
+    # close_connection()
 
     # session['PREPARED_PLAYLISTS'] = prepared_playlists   
 
