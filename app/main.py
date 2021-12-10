@@ -17,7 +17,7 @@ app.logger.addHandler(handler)
 
 random.seed(420)
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 if DEBUG_MODE:
     # Server-side Parameters
@@ -81,7 +81,8 @@ auth_query_parameters = {
     "response_type": "code",
     "redirect_uri": REDIRECT_URI,
     "scope": SCOPE,
-    "client_id": CLIENT_ID
+    "client_id": CLIENT_ID,
+    "show_dialog":'true'
 }
 
 
@@ -113,23 +114,26 @@ def callback():
         "code": str(auth_token),
         "redirect_uri": REDIRECT_URI,
         'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
+        'client_secret': CLIENT_SECRET
+
     }
-    # app.logger.info(msg=code_payload)
+    app.logger.info(msg=code_payload)
     post_request = requests.post(SPOTIFY_TOKEN_URL, data=code_payload)
     # Auth Step 5: Tokens are Returned to Application
     response_data = json.loads(post_request.text)
+    app.logger.info(f"{response_data}")
     access_token = response_data["access_token"]
     refresh_token = response_data["refresh_token"]
     # token_type = response_data["token_type"]
     expires_in = response_data["expires_in"]
 
     # Auth Step 6: Use the access token to access Spotify API
-    authorization_header = {"Authorization": "Bearer {}".format(access_token)}
+    authorization_header = {"Authorization": "Bearer {}".format(access_token), 'Content-Type': 'application/x-www-form-urlencoded'}
 
     # Get profile data
     user_profile_api_endpoint = "{}/me".format(SPOTIFY_API_URL)
     profile_response = requests.get(user_profile_api_endpoint, headers=authorization_header)
+    app.logger.info(f"PROFILE RESPONSE {profile_response.text}")
     profile_data = json.loads(profile_response.text)
     user_id = profile_data['id']
     user_display_name = profile_data['display_name']
@@ -138,7 +142,9 @@ def callback():
     #FUNCTION HERE TO ADD USER INFO TO TABLE IN DB
     db_connection = get_db()
     cursor = db_connection.cursor()
-    verify_prior_entry = cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID={user_id} ORDER BY AccessExpires DESC;').fetchone()
+    all_data = cursor.execute("SELECT SpotifyID FROM RadialUsers;").fetchall()
+    app.logger.info(f"{all_data}")
+    verify_prior_entry = user_id in all_data
     if verify_prior_entry:
 
         recorded_expiration = verify_prior_entry[-1]
