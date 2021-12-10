@@ -58,7 +58,7 @@ init_db()
 
 
 @app.teardown_appcontext
-def close_connection(exception):
+def close_connection():
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
@@ -159,6 +159,7 @@ def callback():
         cursor.execute(insert_statement, insertable_values)
     
     db_connection.commit()
+    close_connection()
 
     if user_id not in os.listdir(f"{USER_DATA_PATH}"):
         os.mkdir(f"{USER_DATA_PATH}/{user_id}")
@@ -236,6 +237,7 @@ def clustertracks():
     cursor = db_connection.cursor()
     cursor.execute(insert_statement, insertable_values)
     db_connection.commit()
+    close_connection()
 
     # session['PREPARED_PLAYLISTS'] = prepared_playlists   
 
