@@ -1,10 +1,40 @@
 .centroid img {
     height: 300px;
-    width: 250px;
+    width: 300px;
 }
 
+h2 {
+    text-align:center;
+}
+
+.centroid-track-name {
+    text-align: center;
+    margin-top: 5%;
+
+}
+
+
+.jumbotron {
+    padding-top:0;
+}
+
+.centroid{
+    padding-left:0;
+}
+
+.cluster {
+    margin-top: 0;
+}
+
+.closest-tracks{
+    padding-left:0;
+    margin-top: 5%;
+}
 
 .deploy-button {
     /* max-width: 85%; */
     font-size: 16px;
+    margin-left: 14%;
+    margin-top: 10%;
 }
+

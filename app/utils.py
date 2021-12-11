@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 def refreshTheToken(refreshToken):
     auth_header = {'Authorization': f'{AUTH_HASH}'}
-    logging.info(auth_header)
+    logging.info(f"REFRESHING THE TOKEN")
     
     data = {'grant_type': 'refresh_token', 'refresh_token': refreshToken}
 
@@ -46,7 +46,7 @@ def prime_user_from_access_token(user_id,accessToken):
     user_contacter = Contacter()
     user_contacter.formAccessHeaderfromToken(accessToken)
     new_user = SpotifyUser(user_id, contacter=user_contacter)
-    logging.info('user has been primed from access token')
+    logging.info(f'user {user_id} has been primed from access token')
     return new_user
 
 

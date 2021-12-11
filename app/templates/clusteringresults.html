@@ -32,9 +32,9 @@
     </head>
 
         <body>
-            <h1>Your Clustering Results</h1>
+            <h2>Your Clustering Results</h2>
 
-            <h3 class='text-center'>You Chose {{chosen_algorithm}} with {{chosen_clusters}} Clusters </h3>
+            <h5 class='text-center'>You Chose <strong> {{chosen_algorithm}} </strong> with <strong> {{chosen_clusters}} </strong> Clusters </h5>
 
             {% for key in displayable_data.keys() %}
             
@@ -46,19 +46,19 @@
                 <div class="cluster row">
                     <h3> Cluster {{ (key | int) + 1 }}: {{total_organized_playlist_data[key]['size']}} Tracks ({{total_organized_playlist_data[key]['proportional_size']}}%)</h3>
                     <div class='col-sm-6 centroid'>
-                        <h4>Closest Track</h4>
+                        <h4>Your Closest Track is ...</h4>
                         <a href="{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['playable_url']}}" target="_blank"><img alt="album cover" class="hoverable centroid-img" style="border: 5px solid #ff002f" src="{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['album_cover_url']}}"></a>
-                        <strong><span class="song-name truncate">{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['name']}} by {{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['artists']}}</span></strong>
+                        <strong><span class="centroid-track-name truncate">{{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['name']}} by {{displayable_data[key][total_organized_playlist_data[key]['centroid_track']]['artists']}}</span></strong>
    
                         
-                        <div class='col-sm-6'>
-                            <h4>Five Tracks Closest to Centroid</h4>
+                        <div class='col-sm-12 closest-tracks'>
+                            <h4 class="closest-tracks-title">Five Tracks Closest to Centroid</h4>
                         </div>
-                        <ol start="1">
-                            {% for track_id, track_data in displayable_data[key].items() %}
-                            <li><strong><span class="song-name truncate"> {{track_data['name']}} by {{track_data['artists']}}</span></strong></li>
-                            {% endfor %}
-                        </ol>
+                            <ol>
+                                {% for track_id, track_data in displayable_data[key].items() %}
+                                <li> <strong><span class="truncate"> {{track_data['name']}} by {{track_data['artists']}}</span></strong></li>
+                                {% endfor %}
+                            </ol>
                         
 
                         {% set key = (key | int) %}

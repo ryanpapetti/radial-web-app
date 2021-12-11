@@ -1,4 +1,4 @@
-import json, random, uuid, sqlite3, time, logging, os
+import json, random, uuid, sqlite3, time, logging, os, shutil
 from flask import Flask, request, redirect, render_template, url_for, session, g
 import requests
 from urllib.parse import quote
@@ -17,7 +17,7 @@ app.logger.addHandler(handler)
 
 random.seed(420)
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 if DEBUG_MODE:
     # Server-side Parameters
@@ -40,14 +40,14 @@ DATABASE = 'app_data/basic_user_credentials.db'
 DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
 USER_DATA_PATH = 'app_data/user_data'
 def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+    db = sqlite3.connect(DATABASE)
     return db
 
 
 def init_db():
     with app.app_context():
+        if os.path.exists(DATABASE):
+            os.remove(DATABASE)
         db = get_db()
         with app.open_resource(DB_CREATION_SCRIPT, mode='r') as f:
             db.cursor().executescript(f.read())
@@ -57,10 +57,8 @@ def init_db():
 init_db()
 
 
-def close_connection():
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+def close_connection(db):
+    db.close()
 
 #  Client Keys
 CLIENT_ID = "7ec4038de1184e2fb0a1caf13352e295"
@@ -133,7 +131,7 @@ def callback():
     # Get profile data
     user_profile_api_endpoint = "{}/me".format(SPOTIFY_API_URL)
     profile_response = requests.get(user_profile_api_endpoint, headers=authorization_header)
-    app.logger.info(f"PROFILE RESPONSE {profile_response.text}")
+    # app.logger.info(f"PROFILE RESPONSE {profile_response.text}")
     profile_data = json.loads(profile_response.text)
     user_id = profile_data['id']
     user_display_name = profile_data['display_name']
@@ -143,31 +141,37 @@ def callback():
     db_connection = get_db()
     cursor = db_connection.cursor()
     all_data = cursor.execute("SELECT SpotifyID FROM RadialUsers;").fetchall()
-    app.logger.info(f"{all_data}")
-    verify_prior_entry = user_id in all_data
+    # app.logger.info(f"{all_data}")
+    verify_prior_entry = (user_id,) in all_data
+    app.logger.info(f"User already in DB: {verify_prior_entry} ({all_data})")
     if verify_prior_entry:
-
-        recorded_expiration = verify_prior_entry[-1]
-        if int(time.time()) + 3200 > int(recorded_expiration):
+        user_data = cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;').fetchone()
+        recorded_expiration = user_data[-1] 
+        # app.logger.info(f"RECORDED EXPIRATION: {recorded_expiration}")
+        if time.time() > int(recorded_expiration):
             #refresh token
             refresh_token_data = refreshTheToken(refresh_token)
             access_token = refresh_token_data['accessToken']
             expires_in = refresh_token_data['expiresAt']
 
-        replace_statement = 'REPLACE INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?)'
-        replaceable_values = (user_id,user_display_name,access_token, refresh_token, expires_in)
+        replace_statement = f'UPDATE RadialUsers SET RefreshToken=?, AccessExpires=? WHERE SpotifyId="{user_id}";'
+        replaceable_values = (refresh_token, expires_in + int(time.time()))
+        # app.logger.info(f"updating with these values to db {replaceable_values}")
         cursor.execute(replace_statement, replaceable_values)
     
     else:
-        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?)'
+        app.logger.info('BRAND NEW USER ADDING TO DB')
+        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?);'
         insertable_values = (user_id,user_display_name,access_token, refresh_token, expires_in)
         cursor.execute(insert_statement, insertable_values)
     
     db_connection.commit()
-    # close_connection()
+    cursor.close()
 
-    if user_id not in os.listdir(f"{USER_DATA_PATH}"):
-        os.mkdir(f"{USER_DATA_PATH}/{user_id}")
+    if user_id in os.listdir(f"{USER_DATA_PATH}"):
+       shutil.rmtree(f"{USER_DATA_PATH}/{user_id}")
+
+    os.mkdir(f"{USER_DATA_PATH}/{user_id}")
 
     app.logger.info(msg='Set user')
 
@@ -179,7 +183,6 @@ def callback():
     # return redirect(f"{CLIENT_SIDE_URL}/appeducation")
     # return render_template('appeducation.html', spotify_user_id = user_id)
     proper_url = url_for('appeducation', spotify_user_id = user_id, _scheme=SCHEME, _external=True)
-    app.logger.info(proper_url)
     return redirect(proper_url)
 
 
@@ -187,28 +190,30 @@ def callback():
 
 @app.route('/clustertracks', methods=['POST'])
 def clustertracks():
-    app.logger.info(f"{request.form}")
-    app.logger.info(f"{request.args}")
+    # app.logger.info(f"{request.form}")
+    # app.logger.info(f"{request.args}")
     spotify_user_id = request.args.get('spotify_user_id')
     algorithm = request.form.get('algorithm')
     desired_clusters = request.form.get('desired_clusters')
     chosen_algorithm = algorithm
     chosen_clusters = gather_cluster_size_from_submission(desired_clusters)
-    app.logger.info(msg='cluster size determined')
+    # app.logger.info(msg='cluster size determined')
     # session['ALGORITHM_CHOSEN'] = chosen_algorithm
     # session['CLUSTERING_CHOSEN'] = chosen_clusters
 
-    app.logger.info(msg=f'algorithm: {chosen_algorithm}')
-    app.logger.info(msg=f'clusters: {chosen_clusters}')
+    # app.logger.info(msg=f'algorithm: {chosen_algorithm}')
+    # app.logger.info(msg=f'clusters: {chosen_clusters}')
 
-    app.logger.info(msg=f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+    # app.logger.info(msg=f'SELECT DisplayName FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
     retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
+    assert spotify_user_id == retrieved_id
 
-    app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")
 
+    user_obj = prime_user_from_access_token(spotify_user_id, retrieved_access_token)
     # auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
-    user_obj = prime_user_from_access_token(retrieved_id, retrieved_access_token)
+
+    app.logger.info(f"gathered the following from the db: {retrieved_id} vs {spotify_user_id}, {retrieved_display_name}, {retrieved_access_token}")
 
     #gather data
 
@@ -241,6 +246,7 @@ def clustertracks():
     cursor = db_connection.cursor()
     cursor.execute(insert_statement, insertable_values)
     db_connection.commit()
+    cursor.close()
     # close_connection()
 
     # session['PREPARED_PLAYLISTS'] = prepared_playlists   
@@ -307,13 +313,14 @@ def deploy_cluster(cluster_id):
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
 
 
-    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}"').fetchone()[:3]
+    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
 
     app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")
 
     # auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
     specified_user = prime_user_from_access_token(retrieved_id, retrieved_access_token)
+    specified_user.optional_display_id = retrieved_display_name
 
 
     # specified_user = session['VALID_USER']

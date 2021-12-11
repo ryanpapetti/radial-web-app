@@ -65,6 +65,8 @@ class SpotifyUser:
                 playlists_to_extend.append((playlist['id'],playlist['name']))
             final_ids.extend(playlists_to_extend)
         total_queries_made = 1
+        logging.info(f"YOU WILL NEED TO GATHER {len(final_ids)} playlists")
+
         while api_response['next']: #call the api until you collect all playlists
             new_link = api_response['next']
             api_response = self.contacter.contact_api(new_link).json()
@@ -77,7 +79,7 @@ class SpotifyUser:
             total_queries_made +=1
         
         logging.info(f'Collected all data in {total_queries_made} queries')
-        
+        logging.info(f'FINAL IDS ({len(set(final_ids))}): {set(final_ids)}')
         return set(final_ids)
 
 
@@ -101,6 +103,10 @@ class SpotifyUser:
             raise ValueError('Add a contacter')
         playlist_ids = self.get_all_user_playlist_ids() if custom_playlist_ids is None else custom_playlist_ids
 
+        logging.info(f'Getting ready to work with {len(playlist_ids)} playlists')
+
+        self.playlists = {} # this may wipe existing user data which would be good???
+
         for playlist_info in playlist_ids:
             #make a playlist instance and add it to the user's playlist dict
             playlist_id,playlist_name = playlist_info
@@ -114,6 +120,7 @@ class SpotifyUser:
     def aggregate_track_ids_across_playlists(self):
         assert self.playlists != {}
         track_set = set()
+        logging.info(f"We have {len(self.playlists)} playlists to aggregate across")
         for playlist_id, playlist in self.playlists.items():
             logging.info(f'WORKING WITH {playlist_id}')
             relevant_track_ids = {track.id for track in playlist.tracks}

@@ -1,0 +1,18 @@
+.jumbotron p.text-right {
+    margin-top:10%;
+    margin-bottom:0;
+    
+}
+
+.jumbotron {
+    padding-bottom:3% !important;
+}
+
+
+form button{
+    align-content: center;
+    margin-left:15%;
+    margin-right:25%
+    /* margin: auto; */
+    /* text-align: center; */
+}
