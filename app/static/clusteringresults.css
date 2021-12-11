@@ -1,6 +1,6 @@
 .centroid img {
     height: 300px;
-    width: 300px;
+    width: 100%;
 }
 
 h2 {
@@ -13,13 +13,18 @@ h2 {
 
 }
 
+ol li span {
+    line-height: 2.5;
+}
+
 
 .jumbotron {
     padding-top:0;
 }
 
 .centroid{
-    padding-left:0;
+    padding:0;
+
 }
 
 .cluster {
@@ -31,10 +36,16 @@ h2 {
     margin-top: 5%;
 }
 
+
+.publish-row {
+    text-align: center;
+}
+
 .deploy-button {
     /* max-width: 85%; */
     font-size: 16px;
-    margin-left: 14%;
-    margin-top: 10%;
+    /* margin-left: 14%; */
+    margin-top: 5%;
 }
+
 

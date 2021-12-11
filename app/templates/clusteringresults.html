@@ -56,15 +56,21 @@
                         </div>
                             <ol>
                                 {% for track_id, track_data in displayable_data[key].items() %}
-                                <li> <strong><span class="truncate"> {{track_data['name']}} by {{track_data['artists']}}</span></strong></li>
+                                <li> 
+                                    <!-- <strong> -->
+                                    <span class="truncate"> {{track_data['name']}} by {{track_data['artists']}}</span>
+                                <!-- </strong> -->
+                            </li>
                                 {% endfor %}
                             </ol>
                         
 
                         {% set key = (key | int) %}
 
+                    <div class="row publish-row">
 
-                    <a href="{{url_for('deploy_cluster',cluster_id=key, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters)}}" class="btn btn-primary btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="cluster-{{key}}">Publish Your Cluster </a>
+                        <a href="{{url_for('deploy_cluster',cluster_id=key, spotify_user_id=spotify_user_id, chosen_algorithm = chosen_algorithm,  chosen_clusters = chosen_clusters)}}" class="btn btn-primary btn-lg active deploy-button" role="button" aria-pressed="true" data-toggle="button" id="cluster-{{key}}">Publish Your Cluster </a>
+                    </div>
   
 
                     <script type="text/javascript">
@@ -120,7 +126,7 @@
             {% endfor %}
 
 
-            <a href="{{url_for('index')}}" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button" id="start-over-button">Try Another Clustering </a> 
+            <!-- <a href="{{url_for('index')}}" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button" id="start-over-button">Try Another Clustering </a> 
 
             <script type="text/javascript">
             $("a#start-over-button").on("click",function(){
@@ -130,7 +136,17 @@
 
                 
             });
-       </script>
+       </script> -->
+
+
+
+       <footer class="container container-fluid text-center">
+
+        <div class="row">
+            <h6> v0.01 (Capstone) | Developed by Ryan Papetti | <a href="https://ryanpapetti.com">Portfolio</a> </h6>
+        </div>
+        
+        </footer>
 
 
 
