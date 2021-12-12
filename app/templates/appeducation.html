@@ -7,41 +7,28 @@
         
         <!-- jQuery library -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-        
-        <!-- Materialize -->
-        <!-- Compiled and minified CSS -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
 
         <!-- Compiled and minified JavaScript -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-        <!-- Icons -->
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <!-- Compiled and minified CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 
         <!-- Animate.CSS -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css">
-
-        <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-        
-        <!-- Latest compiled JavaScript -->
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
-        <!-- MathJax for LaTeX -->
-        <!-- <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script> -->
-
-        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script> -->
-
         <!-- MY OWN CSS -->
         <link rel="stylesheet" href="{{ url_for('static', filename='appeducation.css') }}" media="screen">
     </head>
 
 
     <body>
-        <div class="container-fluid text-center">
+        <div class="container-fluid ">
             <div class="row">
-                <div class='col-sm-12 animated fadeIn'>
+                <div class='col-sm-12 animated fadeIn text-center'>
                     <h1 class="animated fadeIn">About Radial</h1>
-                    <p style="font-style: italic;">If you'd like to jump to the bottom to cluster click <a href="#cluster-submit-jumbotron"> here </a></p>
+                    <p class="delay-2s" style="font-style: italic;">If you'd like to jump to the bottom to cluster click <a href="#cluster-submit-jumbotron"> here </a></p>
                     
                 </div>
             </div>
@@ -49,15 +36,15 @@
 
             
             
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>You've never seen something like Radial before...</h2>
+            <div class="delay-1s jumbotron  jumbotron-fluid text-left mt-3 p-5 bg-secondary text-white rounded">
+                <h3>You've never seen something like Radial before...</h3>
                 <p>Radial makes clustering fun by leveraging your Spotify playlist data to group your tracks based on their audio similarity</p>
                 <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">How So?</a> -->
                 <p class="text-right">1/8</p> 
             </div>
             
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>Think of Radial as a musical exploration tool</h2>
+            <div class="jumbotron jumbotron-fluid text-left mt-3 p-5 bg-secondary text-white rounded">
+                <h3>Think of Radial as a musical exploration tool</h3>
                 <p> Radial helps you find hidden patterns in the music you have across playlists you've made, patterns that are guaranteed to be unique to you </p>
                 <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">How So?</a> -->
                 <p class="text-right">2/8</p> 
@@ -65,8 +52,8 @@
 
 
 
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>Radial works only with playlists you've created</h2>
+            <div class="jumbotron jumbotron-fluid text-left mt-4 p-5 bg-secondary text-white rounded">
+                <h3>Radial works only with playlists you've created</h3>
                 <p> The app crawls through your playlists, gathers your unique tracks, and makes queries to Spotify's API to retrieve relevant metadata for our app. </p>
                 <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a> -->
                 <p class="text-right">3/8</p>  
@@ -75,8 +62,8 @@
 
 
 
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>We ignore artist, album, language, and almost all demographic data </h2>
+            <div class="jumbotron jumbotron-fluid text-left mt-3 p-5 bg-secondary text-white rounded">
+                <h3>We ignore artist, album, language, and almost all demographic data </h3>
                 <p> The only demographic data for tracks that Radial use are the durations of the tracks. Radial ignores these data to focus on the audio similarity of the tracks. </p>
                 <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a> -->
                 <p class="text-right">4/8</p>  
@@ -85,8 +72,8 @@
 
 
 
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>So how do we decide how two tracks are similar?</h2>
+            <div class="jumbotron jumbotron-fluid text-left mt-3 p-5 bg-secondary text-white rounded">
+                <h3>So how do we decide how two tracks are similar?</h3>
                 <p> We take scaled track metadata from Spotify and run a standard distance formula, the sum of squared differences between the tracks' features. </p>
                 <!-- <a href="#" class="btn btn-primary btn-lg active" role="button" aria-pressed="true" data-toggle="button">What next?</a> -->
                 <p class="text-right">5/8</p>  
@@ -95,20 +82,20 @@
 
 
 
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>Meet Your Clusterers</h2>
+            <div class="jumbotron jumbotron-fluid text-left mt-3 p-5 bg-secondary text-white rounded">
+                <h3>Meet Your Clusterers</h3>
                 <p>Once the data are structured accordingly, it is time to choose a clustering algorithm to group your data. We have two options for you</p>
                 <div class="container">
                     <div class="row">
                         <div class="col-xs-12">
-                            <h3>Agglomerative Hierarchical</h3>
+                            <h4>Agglomerative Hierarchical</h4>
                             <p>
                                 Bottom-up tree-based clustering. Utilizes complete linkage for robustness. Find two tracks with smallest gap between the same feature, group and treat as one track - repeat until done.
                             </p>
 
                         </div>
                         <div class="col-xs-12">
-                            <h3>KMeans</h3>
+                            <h4>KMeans</h4>
                             <p>
                                 Place k points (centroids) randomly within data. Assign each track to closest centroid via standard distance formula. Update centroids with average of data from all tracks assigned. Repeat until centroids no longer change.
                             </p>
@@ -123,20 +110,20 @@
  
             
             
-            <div class="jumbotron jumbotron-fluid text-left">
-                <h2>Now Your Clustering Types</h2>
+            <div class="jumbotron jumbotron-fluid text-left mt-3 p-5 bg-secondary text-white rounded">
+                <h3>Now Your Clustering Types</h3>
                 <p>Once the data are structured accordingly, it is time to choose a clustering algorithm to group your data. We have two options for you</p>
                 <div class="container">
                     <div class="row">
                         <div class="col-xs-12">
-                            <h3>Simple Clustering</h3>
+                            <h4>Simple Clustering</h4>
                             <p>
                                 Suitable for total track size (&lt; 250). Produces five groups of tracks. Groups are less homogenous.
                             </p>
 
                         </div>
                         <div class="col-xs-12">
-                            <h3>Standard Clustering</h3>
+                            <h4>Standard Clustering</h4>
                             <p>
                                 Suitable for all total track sizes. Produces nine groups of tracks.
                             </p>
@@ -144,7 +131,7 @@
                         </div>
 
                         <div class="col-xs-12">
-                            <h3>Deep Clustering</h3>
+                            <h4>Deep Clustering</h4>
                             <p>
                                 Suitable for large track collections (&gt; 1,500) tracks. Produces thirteen groups of tracks. Groups may be more niche or smaller.
                             </p>
@@ -163,16 +150,16 @@
 
 
         
-            <div class="jumbotron jumbotron-fluid text-left" id="cluster-submit-jumbotron">
-                <h2>Now it's your turn</h2>
+            <div class="jumbotron jumbotron-fluid text-left mt-3 p-5 bg-secondary text-white rounded" id="cluster-submit-jumbotron">
+                <h3>Now it's your turn</h3>
                 <p>Select your algorithm and clustering type below</p>
 
 
                 <div class="container">
-                        <form class="u-clearfix u-form-spacing-10 u-form-vertical u-inner-form" action="{{url_for('clustertracks', spotify_user_id=spotify_user_id)}}" method="post">
+                        <form class="u-clearfix u-form-spacing-10 u-form-vertical u-inner-form" action="{{url_for('loadingpage', spotify_user_id=spotify_user_id)}}" method="post">
 
                             <div class="mb-3 row">
-                                <label for="algorithm">Choose Your Algorithm</label>
+                                <label for="algorithm" class="text-white">Choose Your Algorithm</label>
                                 <select class="form-select mb-3 form-control" name="algorithm">
                                   <!-- <option selected>Desired Clusterer</option> -->
                                   <option>Agglomerative Hierarchical</option>
@@ -180,16 +167,16 @@
                                 </select>
                                   
                                   
-                                  <label for="desired_clusters">Choose Your Cluster Size</label>
+                                  <label for="desired_clusters" class="text-white">Choose Your Cluster Size</label>
                                   <select class="form-select form-control mb-3" name="desired_clusters">
                                       <!-- <option selected>Desired Clusters</option> -->
                                       <option>Simple Clustering (5)</option>
                                       <option>Standard Clustering (9)</option>
                                       <option>Deep Clustering (13)</option>
                                     </select>
+                                    
+                                    <button type="submit" class="btn btn-success">See your results</button>
                                 </div>
-                                
-                            <button type="submit" class="btn btn-primary">See your results</button>
                         </form>
                 </div>
 

@@ -1,5 +1,6 @@
 import json, random, uuid, sqlite3, time, logging, os, shutil
 from flask import Flask, request, redirect, render_template, url_for, session, g
+from flask.helpers import make_response
 import requests
 from urllib.parse import quote
 from flask_session import Session
@@ -186,6 +187,16 @@ def callback():
     return redirect(proper_url)
 
 
+@app.route('/loadingpage', methods=['POST'])
+def loadingpage():
+    spotify_user_id = request.args.get('spotify_user_id')
+    algorithm = request.form.get('algorithm')
+    desired_clusters = request.form.get('desired_clusters')
+    chosen_algorithm = algorithm
+    chosen_clusters = gather_cluster_size_from_submission(desired_clusters)
+    if chosen_clusters not in [5,9,13]:
+        raise AssertionError('THE PASSSED CLUSTER SIZE IS INVALID')
+    return render_template('loadingpage.html', spotify_user_id = spotify_user_id, chosen_clusters = chosen_clusters, chosen_algorithm = chosen_algorithm)
 
 
 @app.route('/clustertracks', methods=['POST'])
@@ -193,10 +204,12 @@ def clustertracks():
     # app.logger.info(f"{request.form}")
     # app.logger.info(f"{request.args}")
     spotify_user_id = request.args.get('spotify_user_id')
-    algorithm = request.form.get('algorithm')
-    desired_clusters = request.form.get('desired_clusters')
-    chosen_algorithm = algorithm
-    chosen_clusters = gather_cluster_size_from_submission(desired_clusters)
+    chosen_algorithm = request.form.get('chosen_algorithm')
+    chosen_clusters = int(request.form.get('chosen_clusters'))
+    if chosen_clusters not in [5,9,13]:
+        raise AssertionError(f'THE PASSSED CLUSTER SIZE IS INVALID: {chosen_clusters}')
+
+
     # app.logger.info(msg='cluster size determined')
     # session['ALGORITHM_CHOSEN'] = chosen_algorithm
     # session['CLUSTERING_CHOSEN'] = chosen_clusters
@@ -225,6 +238,7 @@ def clustertracks():
     # app.logger.info(msg=user_prepared_data)
 
 
+    app.logger.info(f'PREPARING TO CLUSTER DATA WITH {chosen_algorithm} {chosen_clusters}')
 
     labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
     labelled_data.to_csv(f'app_data/user_data/{retrieved_id}/labelled_data.csv')
@@ -255,15 +269,15 @@ def clustertracks():
     # Combine profile and playlist data to display
     # return render_template("clusteringresults.html", stringified_playlists = json.dumps(prepared_playlists))
     # return redirect(f"{CLIENT_SIDE_URL}/clusteringresults")
-    return redirect(url_for('clusteringresults', spotify_user_id = retrieved_id, chosen_clusters = chosen_clusters, chosen_algorithm = chosen_algorithm, _scheme=SCHEME, _external=True))
+
+
+    # return redirect(url_for('clusteringresults', spotify_user_id = retrieved_id, chosen_clusters = chosen_clusters, chosen_algorithm = chosen_algorithm, _scheme=SCHEME, _external=True))
+    return make_response('SUCCESSFULLY CLUSTERED AND STORED RELEVANT DATA', 200)
 
 
 
 
-# @app.route('/loading')
-# def loading():
-#     pass
-#     # return render_template('loading-page.html')
+
 
 
 
@@ -276,8 +290,8 @@ def clusteringresults():
     spotify_user_id = request.args.get('spotify_user_id')
     with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
         prepared_playlists = json.load(reader) 
-    chosen_clusters = int(request.args.get('chosen_clusters'))
-    chosen_algorithm = request.args.get('chosen_algorithm')
+    chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
+    chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
 
     # prepared_playlists = session['PREPARED_PLAYLISTS']
     retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}"').fetchone()[:3]
