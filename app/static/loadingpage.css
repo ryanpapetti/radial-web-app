@@ -1,0 +1,27 @@
+.spinner-border{
+    visibility: visible !important;
+    /* display: block !important; */
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+h1 {
+    margin-top:5%;
+    margin-bottom:10%;
+}
+
+
+footer {
+    margin-top:10%;
+}
+
+footer h6 {
+    font-size: 0.8rem;
+}
+
+.wisdom-title {
+    margin-top: 5%;
+    margin-bottom: 5%;
+}

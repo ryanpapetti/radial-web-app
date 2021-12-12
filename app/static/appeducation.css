@@ -1,18 +1,30 @@
 .jumbotron p.text-right {
-    margin-top:10%;
-    margin-bottom:0;
+    margin-top:10% ;
+    margin-bottom:0 ;
+    text-align: right;
     
 }
 
 .jumbotron {
-    padding-bottom:3% !important;
+    margin-bottom:9% !important;
+    
 }
 
 
+
+
 form button{
-    align-content: center;
-    margin-left:15%;
-    margin-right:25%
-    /* margin: auto; */
-    /* text-align: center; */
+    width:80%;
+    /* margin-left:10%; */
+    background-color: rgb(32, 134, 49) !important;
+}
+
+
+footer {
+    margin-top: 10% !important;
+
+}
+    
+footer h6 {
+    font-size: 0.8rem;
 }

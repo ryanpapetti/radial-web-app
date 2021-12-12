@@ -7,29 +7,119 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <meta charset="utf-8">
 
-        <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+        <!-- Compiled and minified JavaScript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+        <!-- Compiled and minified CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+        <!-- Animate.CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css">
 
 
+        <link rel="stylesheet" href="{{ url_for('static', filename='loadingpage.css') }}" media="screen">
 
         
     </head>
 
 
     <body>
+
+
+    <script>
+
+        $.ajax({
+            type: 'POST',
+            url: "{{url_for('clustertracks', spotify_user_id=spotify_user_id)}}",
+            data: {
+                chosen_clusters: '{{chosen_clusters}}',
+                chosen_algorithm: '{{chosen_algorithm}}'
+            },
+            success: function() {
+                window.location.replace("{{url_for('clusteringresults', spotify_user_id = spotify_user_id, chosen_clusters = chosen_clusters, chosen_algorithm = chosen_algorithm, _scheme=SCHEME, _external=True)}}");
+            }
+          });
+    </script>
         
         <div class="container-fluid text-center center-align">
             <div class="row">
-                <div class='col-sm-12 animated fadeIn'>
+                <div class='col-sm-12 animated fadeIn 1s'>
                     <h1 class="animated fadeIn">Loading Your Data</h1>
                     
                 </div>
-                <div class="col-sm-12 d-flex justify-content-center">
-                    <div class="spinner spinner-border text-success" role="status">
-                      <span class="sr-only">Loading...</span>
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-success" role="status">
+                      <span class="visually-hidden">Loading...</span>
                     </div>
                   </div>
         </div>
+
+
+
+        <div class='row text-center'>
+            
+            <h3 class="col-sm-12 text-center wisdom-title animated fadeIn 1s"> Some Words of Wisdom </h3>
+
+            <p class="animated fadeIn text-left col-sm-12 animated fadeIn 2s" id="quote1Display">
+                
+            </p>
+
+            <p class="animated fadeIn text-left col-sm-12 animated fadeIn 5s" id="quote2Display">
+                
+            </p>
+
+
+            <script>
+                        let funfacts = ["Did you know Radial organizes your playlists so that the closest song to the centroid is first?",
+        "The idea for Radial was born in late 2019 and began as a clustering exploration project.",
+        "Radial gets its name from how tracks are organized in the playlist; the closer the song is to the top, the smaller its radius!",
+        "Radial uses all open-source software and was built in Flask, SQLite, and other Python scripts on top of an Nginx server.",
+        "Clustering is an example of unsupervised machine learning, where the model does not know the target values of the original data.",
+        "Many AI apps stray away from clustering because there is no mathematically optimal answer - it's up to you!",
+        "Ryan Papetti created Radial as his Graduate Capstone for the University of Arizona in Fall 2021.",
+        "Thanks for waiting! You should be proud of yourself today - and everyday!"];
+
+
+
+        function shuffleArray(array) {
+            for (var i = array.length - 1; i > 0; i--) {
+            
+                // Generate random number
+                var j = Math.floor(Math.random() * (i + 1));
+                            
+                var temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+                
+            return array;
+            }
+            
+
+
+        function newQuote() {
+            var shuffledArray = shuffleArray(funfacts);
+            var quote1 = shuffledArray.pop();
+            var quote2 = shuffledArray.pop();
+            document.getElementById('quote1Display').innerHTML = quote1;
+            document.getElementById('quote2Display').innerHTML = quote2;
+        }
+
+        newQuote();
+            </script>
+
+
+
+        </div>
+
+
         </div>
 
 
@@ -40,6 +130,8 @@
         </div>
         
     </footer>
+
+    
 
     </body>
 
