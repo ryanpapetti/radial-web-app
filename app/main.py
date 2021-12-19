@@ -16,8 +16,8 @@ from urllib.parse import quote
 #Explicit function imports from utils.py file 
 from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, refreshTheToken
 
-# Authentication Steps, paramaters, and responses are defined at https://developer.spotify.com/web-api/authorization-guide/
-# Visit this url to see all the steps, parameters, and expected response.
+
+
 
 
 #Creating initial Flask app and setting random seed for strict initialization

@@ -1,35 +1,54 @@
-import json, time, re, logging, random, requests 
-from flask import current_app
-import requests
+"""
+utils.py
+
+This script defines the relevant helper functions for main.py
+"""
+
+#Standard Python imports
+import time, re, logging, random, requests 
+
+#Clustering imports
 from scipy.cluster.hierarchy import cut_tree
 from sklearn.cluster import KMeans
+
+#Custom script imports
 from scripts import SpotifyUser, Contacter
 
-
+#Really insecure, but here nontheless
 AUTH_HASH = "Basic N2VjNDAzOGRlMTE4NGUyZmIwYTFjYWYxMzM1MmUyOTU6MThmYTU5ZTBkNDYxNGMxMzlmNGM2MTAyZjViYzk2NWE="
 
+#Set random seed for reproducibility
 random.seed(420)
 
-# logging.formatter
+#Logging formatter
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+
 def refreshTheToken(refreshToken):
+    """
+    refreshTheToken(refreshToken)
+
+    refreshToken - str
+
+    Refreshes the user's access token with provided refresh token
+
+    Returns access token and expiration to user in a dictionary
+    """
+
+    #Generate authorization hash and relevant data
     auth_header = {'Authorization': f'{AUTH_HASH}'}
     logging.info(f"REFRESHING THE TOKEN")
-    
     data = {'grant_type': 'refresh_token', 'refresh_token': refreshToken}
-
-
+    
     response = requests.post('https://accounts.spotify.com/api/token', data=data, headers=auth_header)
 
     spotifyToken = response.json()
 
     logging.info(spotifyToken)
 
-    #NOW ADD TO DATABASE: INSERT INTO 
-
     # Place the expiration time (current time + almost an hour), and access token into the json
-    spotifyState = {'spotify': 'prod', 'expiresAt': int(time.time()) + 3200, 'accessToken': spotifyToken['access_token']}
+    spotifyState = {'expiresAt': int(time.time()) + 3200, 'accessToken': spotifyToken['access_token']}
     return spotifyState
 
 def token_needs_refresh(db_connection, spotify_user_id):
