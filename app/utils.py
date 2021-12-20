@@ -51,17 +51,35 @@ def refreshTheToken(refreshToken):
     spotifyState = {'expiresAt': int(time.time()) + 3200, 'accessToken': spotifyToken['access_token']}
     return spotifyState
 
-def token_needs_refresh(db_connection, spotify_user_id):
-    pass
 
 def gather_cluster_size_from_submission(submission):
+    """
+    gather_cluster_size_from_submission(submission)
+
+    submission - str
+
+    Parse the submission for cluster size and return the integer. It is guaranteed to be in here.
+
+    Returns int of cluster size
+    """
     pattern = r'\d+'
     return int(re.findall(pattern, submission)[0])
 
 
 
 def prime_user_from_access_token(user_id,accessToken):
+    """
+    prime_user_from_access_token(user_id,accessToken)
 
+    Create user instance and return
+
+    Args:
+        user_id (str)
+        accessToken (str)
+
+    Returns:
+        SpotifyUser: instance to use for gathering etc.
+    """
     user_contacter = Contacter()
     user_contacter.formAccessHeaderfromToken(accessToken)
     new_user = SpotifyUser(user_id, contacter=user_contacter)
@@ -70,6 +88,19 @@ def prime_user_from_access_token(user_id,accessToken):
 
 
 def prepare_data(user):
+    """
+    prepare_data(user)
+
+    Gather and prepare all data for user. This will take a long time as it collects all track data for each user
+
+    Args:
+        user (SpotifyUser): must be made prior
+
+    Returns:
+        numpy array: normalized data to pass to clustering algorithm
+    """
+
+    #mostly logging for debugging purposes later. For around 2500 tracks it takes around 50s 
     logging.info('Timing how long data collection and storing takes')
     start_time = time.time()
     aggregated_audio_features = user.collect_data()
@@ -82,6 +113,20 @@ def prepare_data(user):
 
 
 def execute_clustering(algorithm, clusters, normalized_data):
+    """
+    executes clustering with given algorithms, data, and clusters
+
+    Args:
+        algorithm (str): must be 'kmeans' or 'agglomerative hierarchical' when lowercased 
+        clusters (int): number of clusters to pass to algorithm
+        normalized_data (array-like): prepared and normalized data to cluster
+
+    Raises:
+        AssertionError: if the algorithm passed is not valid; this will be deprecated soon 
+
+    Returns:
+        DataFrame: labelled data after clustering
+    """
     try:
         assert algorithm.lower() in ['kmeans', 'agglomerative hierarchical']
         labelled_data = normalized_data.copy()
@@ -103,10 +148,29 @@ def execute_clustering(algorithm, clusters, normalized_data):
 
 
 def prepare_playlists(user,labelled_data):
+    """
+    prepares the user's playlists for upload and display
+
+    Args:
+        user (SpotifyUser)
+        labelled_data (DataFrame or array-like)
+
+    Returns:
+        Dictionary: uploadable playlists in JSON format
+    """
     return user.generate_uploadable_playlists(labelled_data)
 
 
 def get_cluster_playlist_metadata(clustered_tracks):
+    """
+    get the relevant metadata for the cluster for further organization
+
+    Args:
+        clustered_tracks (dict): cluster ids mapped to the tracks in their cluster
+
+    Returns:
+        Dictionary: JSON structure of cluster metadata
+    """
     total_tracks = sum([len(tracks) for tracks in clustered_tracks.values()])
     total_organized_playlist_data = {}
     for playlist, tracks in clustered_tracks.items():
@@ -121,6 +185,16 @@ def get_cluster_playlist_metadata(clustered_tracks):
 
 
 def get_displayable_tracks_metadata(authorization_header,track_ids):
+    """
+    get the relevant metadata for the tracks that will be displayed on the page
+
+    Args:
+        authorization_header (dict): valid authorization header
+        track_ids (list): list of track_ids to get data for
+
+    Returns:
+        Dictionary: relevant tracks and their metadata in JSON format
+    """
     track_ids_string = ','.join(track_ids)
     query_params = f'?ids={track_ids_string}'
     retrieved_metadata = requests.get(f'https://api.spotify.com/v1/tracks{query_params}', headers=authorization_header).json()
@@ -140,6 +214,16 @@ def get_displayable_tracks_metadata(authorization_header,track_ids):
 
 
 def organize_cluster_data_for_display(authorization_header,clustered_tracks):
+    """
+    collects and organizes relevant metadata to pass to templates for rendering
+
+    Args:
+        authorization_header (dict): valid authorization header
+        clustered_tracks (dict): cluster IDs mapped to the tracks in their cluster
+
+    Returns:
+        tuple: displayable_data, total_organized_playlist_data to pass to HTML templates for rendering
+    """
     total_organized_playlist_data = get_cluster_playlist_metadata(clustered_tracks)
 
     displayable_data = {}
@@ -152,16 +236,15 @@ def organize_cluster_data_for_display(authorization_header,clustered_tracks):
 
 
 
-def get_deployed_cluster_obj(deployed_cluster_objs, cluster_id):
-    cluster_id = int(cluster_id) if type(cluster_id) == str else cluster_id
+# def get_deployed_cluster_obj(deployed_cluster_objs, cluster_id):
+#     cluster_id = int(cluster_id) if type(cluster_id) == str else cluster_id
+#     return deployed_cluster_objs[cluster_id]
 
-    return deployed_cluster_objs[cluster_id]
-
-def load_proper_cluster_button(session,cluster_id):
-    logging.info(f'Passed cluster_id {cluster_id} ({type(cluster_id)})')
-    if 'DEPLOYED_CLUSTERS_OBJS' in session:
-        logging.info(f"DEPLOYED CLUSTERS ARE: {session['DEPLOYED_CLUSTERS_OBJS']} ")
-        logging.info(f"Cluster ID ({cluster_id}) and set of keys of objects ({set(session['DEPLOYED_CLUSTERS_OBJS'].keys())})")
-        if cluster_id in session['DEPLOYED_CLUSTERS_OBJS']:
-            return 'listen'
-    return 'deploy'
+# def load_proper_cluster_button(session,cluster_id):
+#     logging.info(f'Passed cluster_id {cluster_id} ({type(cluster_id)})')
+#     if 'DEPLOYED_CLUSTERS_OBJS' in session:
+#         logging.info(f"DEPLOYED CLUSTERS ARE: {session['DEPLOYED_CLUSTERS_OBJS']} ")
+#         logging.info(f"Cluster ID ({cluster_id}) and set of keys of objects ({set(session['DEPLOYED_CLUSTERS_OBJS'].keys())})")
+#         if cluster_id in session['DEPLOYED_CLUSTERS_OBJS']:
+#             return 'listen'
+#     return 'deploy'
