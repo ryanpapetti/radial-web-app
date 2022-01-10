@@ -26,7 +26,7 @@ random.seed(420)
 
 
 #Custom DEBUG mode to make it simpler to run locally or on server. If True, app runs on local port. Use False only for production
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 if DEBUG_MODE:
     # Server-side Parameters
