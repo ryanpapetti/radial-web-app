@@ -1,6 +1,7 @@
 .centroid img {
     height: 300px;
-    width: 100%;
+    /* width: 100%; */
+    max-width: 100%;
 }
 
 h2 {
@@ -50,6 +51,25 @@ h4 h5 {
     font-size: 16px;
     /* margin-left: 14%; */
     margin-top: 5%;
+}
+
+
+
+
+
+
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) {
+    
+} 
+
+
+
+/* DESKTOP ONLY CHANGES */
+@media only screen and (min-width: 992px) {
+    
+
 }
 
 
