@@ -14,7 +14,7 @@ from flask.helpers import make_response
 from urllib.parse import quote
 
 #Explicit function imports from utils.py file 
-from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, refreshTheToken, gatherAuthInfoAWS, create_db_connection, initUserDataStructures
+from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket
 
 
 
@@ -50,6 +50,9 @@ DATABASE = 'app_data/basic_user_credentials.db'
 DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
 USER_DATA_PATH = 'app_data/user_data'
 
+
+RADIAL_BUCKET = "s3://radial-web-app-data"
+RADIAL_BUCKET_ARN = "arn:aws:s3:::radial-web-app-data"
 
 
 # Client Keys - these need to be changed prior to non-beta production
@@ -168,7 +171,7 @@ def callback():
     db_connection = create_db_connection()
     cursor = db_connection.cursor()
 
-    
+
     #Creating data structures for user
     initUserDataStructures(cursor,refresh_token, access_token, expires_in, user_id, user_display_name)
 
@@ -240,7 +243,7 @@ def clustertracks():
     user_prepared_data = prepare_data(user_obj)
 
     #Temporarily store in a CSV file for debugging purposes
-    user_prepared_data.to_csv(f'app_data/user_data/{retrieved_id}/user_prepared_data.csv')
+    user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/user_prepared_data.csv')
 
     app.logger.info(msg='Data successfully gathered and prepared')
 
@@ -250,14 +253,20 @@ def clustertracks():
     labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
     
     #Temporarily store for debugging purposes
-    labelled_data.to_csv(f'app_data/user_data/{retrieved_id}/labelled_data.csv')
+    labelled_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/labelled_data.csv')
     app.logger.info(msg='Data clustered')
 
 
     #Finally, prepare the user playlists for rendering and display
     prepared_playlists = prepare_playlists(user_obj,labelled_data)
-    with open(f'app_data/user_data/{retrieved_id}/prepared_playlists.json','w') as writer:
-        json.dump(prepared_playlists,writer)
+    
+
+
+    upload_data_to_bucket(RADIAL_BUCKET_ARN,prepared_playlists, f"{retrieved_id}/prepared_playlists.json")
+
+    
+    # with open(f'app_data/user_data/{retrieved_id}/prepared_playlists.json','w') as writer:
+    #     json.dump(prepared_playlists,writer)
     app.logger.info(msg='Dumped user cluster results to JSON')
 
     #Insert clustering parameters for statistical purposes 

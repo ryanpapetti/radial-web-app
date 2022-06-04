@@ -6,6 +6,7 @@ This script defines the relevant helper functions for main.py
 
 #Standard Python imports
 import time, re, logging, random, requests, boto3, json
+from typing import Union
 from botocore.errorfactory import ClientError
 from botocore.exceptions import ClientError
 import pymysql.cursors
@@ -110,7 +111,7 @@ def user_exists(s3_client, user_id):
 
 
 
-def upload_data_to_bucket(bucket_arn:str,uploadable_data:list, desired_name:str):
+def upload_data_to_bucket(bucket_arn:str,uploadable_data:Union[list,dict,str], desired_name:str):
     """
     upload entire array to bucket as a JSON obj
     Args:
