@@ -14,7 +14,7 @@ from flask.helpers import make_response
 from urllib.parse import quote
 
 #Explicit function imports from utils.py file 
-from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, refreshTheToken
+from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, refreshTheToken, gatherAuthInfoAWS
 
 
 
@@ -91,8 +91,9 @@ def close_connection(db):
     db.close()
 
 # Client Keys - these need to be changed prior to non-beta production
-CLIENT_ID = "7ec4038de1184e2fb0a1caf13352e295"
-CLIENT_SECRET = "18fa59e0d4614c139f4c6102f5bc965a"
+radial_keys = gatherAuthInfoAWS()
+CLIENT_ID = radial_keys['radial-spotify-client-id']
+CLIENT_SECRET = radial_keys['radial-spotify-client-secret']
 
 # Spotify URLS
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
