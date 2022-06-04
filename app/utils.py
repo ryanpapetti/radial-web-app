@@ -99,6 +99,7 @@ def close_connection(db):
 
 def user_exists(s3_client, user_id):
     # checks if user exists
+    # really should be done with a database
     # create s3 client
     try:
         s3_client.head_object(Bucket='radial-web-app-data', Key=f'{user_id}/')
@@ -140,6 +141,7 @@ def initUserDataStructures(db_cursor,refresh_token, access_token, expires_in, us
     # create s3 client
     s3_client = boto3.client('s3')
     if user_exists(s3_client,user_id):
+        logging.info('USER DOES EXIST')
         #now check if the access token is expired - if it is then we need to refresh it
         user_data = db_cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;').fetchone()
         recorded_expiration = user_data[-1]
@@ -152,14 +154,16 @@ def initUserDataStructures(db_cursor,refresh_token, access_token, expires_in, us
             expires_in = refresh_token_data['expiresAt']
 
         #Update user with new data regardless
-        replace_statement = f'UPDATE RadialUsers SET RefreshToken=?, AccessExpires=? WHERE SpotifyId="{user_id}";'
+        replace_statement = 'UPDATE RadialUsers SET RefreshToken=%s, AccessExpires=%s WHERE SpotifyId=' + f'"{user_id}";'
         replaceable_values = (refresh_token, expires_in + int(time.time()))
         # app.logger.info(f"updating with these values to db {replaceable_values}")
         db_cursor.execute(replace_statement, replaceable_values)
     else:
         logging.info('BRAND NEW USER ADDING TO DB AND MAKING BUCKET')
-        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?);'
+        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(%s,%s,%s,%s,%s);'
         insertable_values = (user_id,user_name,access_token, refresh_token, expires_in)
+        logging.debug(msg=f"VALUES: {insertable_values}")
+
         db_cursor.execute(insert_statement, insertable_values)
     return True
 

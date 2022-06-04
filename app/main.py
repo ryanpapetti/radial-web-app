@@ -46,9 +46,9 @@ else:
 # Session(app)
 
 #Initialize contact to database
-DATABASE = 'app_data/basic_user_credentials.db'
-DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
-USER_DATA_PATH = 'app_data/user_data'
+DATABASE_SECRET_NAME = 'radialdbcredentials'
+# DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
+# USER_DATA_PATH = 'app_data/user_data'
 
 
 RADIAL_BUCKET = "s3://radial-web-app-data"
@@ -168,7 +168,7 @@ def callback():
 
 
     #Make cursor for database 
-    db_connection = create_db_connection()
+    db_connection = create_db_connection(db_secret_name=DATABASE_SECRET_NAME)
     cursor = db_connection.cursor()
 
 
@@ -272,7 +272,7 @@ def clustertracks():
     #Insert clustering parameters for statistical purposes 
     insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(?,?, ?, ?)'
     insertable_values = (str(uuid.uuid4()), retrieved_id, chosen_algorithm,chosen_clusters)
-    db_connection = create_db_connection()
+    db_connection = create_db_connection(DATABASE_SECRET_NAME)
     cursor = db_connection.cursor()
     cursor.execute(insert_statement, insertable_values)
     db_connection.commit()
@@ -351,7 +351,7 @@ def deploy_cluster(cluster_id):
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
 
     #Retrieve relevant data
-    retrieved_id, retrieved_display_name, retrieved_access_token = create_db_connection().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
+    retrieved_id, retrieved_display_name, retrieved_access_token = create_db_connection(DATABASE_SECRET_NAME).cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
 
     #Logging for debugging
     app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")

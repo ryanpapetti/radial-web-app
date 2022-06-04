@@ -1,3 +1,6 @@
+
+USE radial_app;
+
 CREATE TABLE IF NOT EXISTS RadialUsers (
     SpotifyID varchar(255),
     DisplayName varchar(255),
