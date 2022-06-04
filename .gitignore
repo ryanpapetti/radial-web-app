@@ -5,3 +5,4 @@ flask_session/
 *.db
 app/app_data/user_data/
 *.pem
+credentials/
