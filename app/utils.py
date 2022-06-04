@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 def gatherAuthInfoAWS():
     secrets_client = boto3.client('secretsmanager')
-    secret_info = secrets_client.get_secret_value('radialspotifyauthcreds')
+    secret_info = secrets_client.get_secret_value(SecretId='radialspotifyauthcreds')
     secrets =  json.loads(secret_info['SecretString'])
 
     formatted_secrets = {}
