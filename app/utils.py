@@ -7,6 +7,8 @@ This script defines the relevant helper functions for main.py
 #Standard Python imports
 import time, re, logging, random, requests, boto3, json
 from botocore.errorfactory import ClientError
+from botocore.exceptions import ClientError
+import pymysql.cursors
 
 #Clustering imports
 from scipy.cluster.hierarchy import cut_tree
@@ -26,27 +28,134 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 
 
+def get_secret(secret_name, region_name = 'us-west-2'):
+    '''
+    FROM AWS DOCUMENTATION
+    '''
 
-def createUserDataStructure(refresh_token, user_id, user_name):
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    # In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
+    # See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+    # We rethrow the exception by default.
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'DecryptionFailureException':
+            # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
+            # An error occurred on the server side.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidParameterException':
+            # You provided an invalid value for a parameter.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidRequestException':
+            # You provided a parameter value that is not valid for the current state of the resource.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
+            # We can't find the resource that you asked for.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+    else:
+        # Decrypts secret using the associated KMS key.
+        return get_secret_value_response['SecretString']
+
+
+
+def get_db_info(db_secret_name):
+    return json.loads(get_secret(db_secret_name))
+
+
+
+def create_db_connection(db_secret_name):
+    db_info = get_db_info(db_secret_name)
+    parameters = dict(host=db_info['host'], user=db_info['username'], password=db_info['password'], db=db_info['dbname'], connect_timeout=45, port = 3306)
+    conn = pymysql.connect(**parameters)
+    logging.info('Gathered connection')
+    return conn
+
+
+
+
+def close_connection(db):
+    db.close()
+
+
+
+
+def user_exists(s3_client, user_id):
+    # checks if user exists
+    # create s3 client
+    try:
+        s3_client.head_object(Bucket='radial-web-app-data', Key=f'{user_id}/')
+        return True
+    except ClientError as e:
+        # User is Not found
+        return False
+
+
+
+
+
+def upload_data_to_bucket(bucket_arn:str,uploadable_data:list, desired_name:str):
+    """
+    upload entire array to bucket as a JSON obj
+    Args:
+        uploadable_data (list)
+        desired_name (str): key for bucket
+    """
+    
+    s3 = boto3.client('s3')
+    s3_args = {'Body':bytes(json.dumps(uploadable_data),'utf-8'), 'Bucket':bucket_arn.split(':')[-1], 'Key':desired_name, 'ContentType':'application/json'}
+    s3.put_object(**s3_args)
+    logging.info('successful upload to bucket')
+
+
+
+
+
+
+
+def initUserDataStructures(db_cursor,refresh_token, access_token, expires_in, user_id, user_name):
     
     # create s3 client
     s3_client = boto3.client('s3')
-    bucket = s3_client.get_object('radial-web-app-data')
-    # check if user_id is already in the folder
-    try:
-        s3_client.head_object(Bucket='radial-web-app-data', Key=f'{user_id}/')
-        # if it is, then check access token
-        user_auth_info = s3_client.get_object(Bucket='radial-web-app-data', Key=f"{user_id}/auth.json")
-    except ClientError:
-        # User is Not found
-        pass
+    if user_exists(s3_client,user_id):
+        #now check if the access token is expired - if it is then we need to refresh it
+        user_data = db_cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;').fetchone()
+        recorded_expiration = user_data[-1]
 
-    
-    # if it isnt, make the folder and add info
-    
-    
-    pass
+        #if the access token IS expired, refresh it 
+        if time.time() > int(recorded_expiration):
+            #refresh token
+            refresh_token_data = refreshTheToken(refresh_token)
+            access_token = refresh_token_data['accessToken']
+            expires_in = refresh_token_data['expiresAt']
 
+        #Update user with new data regardless
+        replace_statement = f'UPDATE RadialUsers SET RefreshToken=?, AccessExpires=? WHERE SpotifyId="{user_id}";'
+        replaceable_values = (refresh_token, expires_in + int(time.time()))
+        # app.logger.info(f"updating with these values to db {replaceable_values}")
+        db_cursor.execute(replace_statement, replaceable_values)
+    else:
+        logging.info('BRAND NEW USER ADDING TO DB AND MAKING BUCKET')
+        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?);'
+        insertable_values = (user_id,user_name,access_token, refresh_token, expires_in)
+        db_cursor.execute(insert_statement, insertable_values)
+    return True
 
 
 
