@@ -127,6 +127,11 @@ def upload_data_to_bucket(bucket_arn:str,uploadable_data:Union[list,dict,str], d
 
 
 
+def read_data_from_bucket(bucket_name,file_name):
+    pass
+
+
+
 
 
 

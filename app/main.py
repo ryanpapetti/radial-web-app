@@ -14,7 +14,7 @@ from flask.helpers import make_response
 from urllib.parse import quote
 
 #Explicit function imports from utils.py file 
-from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket
+from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket, read_data_from_bucket
 
 
 
@@ -299,8 +299,11 @@ def clusteringresults():
     #Gather relevant data
     app.logger.info(f"{request.args}")
     spotify_user_id = request.args.get('spotify_user_id')
-    with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
-        prepared_playlists = json.load(reader) 
+    
+    prepared_playlists = read_data_from_bucket(RADIAL_BUCKET,f"{spotify_user_id}/prepared_playlists.json")
+    
+    # with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
+    #     prepared_playlists = json.load(reader) 
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
     chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
     retrieved_id, retrieved_display_name, retrieved_access_token = create_db_connection().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}"').fetchone()[:3]
@@ -310,8 +313,10 @@ def clusteringresults():
     #Retrieve relevant displayable data for clustering results and save
     displayable_data, total_organized_playlist_data = organize_cluster_data_for_display(auth_header,prepared_playlists)
 
-    with open(f'app_data/user_data/{retrieved_id}/total_organized_playlist_data.json','w') as writer:
-        json.dump(total_organized_playlist_data,writer)
+    upload_data_to_bucket(RADIAL_BUCKET_ARN,total_organized_playlist_data, f"{retrieved_id}/total_organized_playlist_data.json")
+
+    # with open(f'app_data/user_data/{retrieved_id}/total_organized_playlist_data.json','w') as writer:
+    #     json.dump(total_organized_playlist_data,writer)
 
     # render the clusteringresults page with passed data
     return render_template("clusteringresults.html", displayable_data = displayable_data, total_organized_playlist_data = total_organized_playlist_data, chosen_algorithm = chosen_algorithm, chosen_clusters = chosen_clusters, spotify_user_id = spotify_user_id)
@@ -335,8 +340,11 @@ def deploy_cluster(cluster_id):
 
     #Gathering relevant data to post
     spotify_user_id = request.args.get('spotify_user_id')
-    with open(f'{USER_DATA_PATH}/{spotify_user_id}/total_organized_playlist_data.json') as reader:
-        total_organized_playlist_data = json.load(reader) 
+
+    total_organized_playlist_data = read_data_from_bucket(RADIAL_BUCKET,f"{spotify_user_id}/total_organized_playlist_data.json")
+
+    # with open(f'{USER_DATA_PATH}/{spotify_user_id}/total_organized_playlist_data.json') as reader:
+    #     total_organized_playlist_data = json.load(reader) 
     
     #weird ampsersand issues that require special parsing
     chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
