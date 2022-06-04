@@ -5,7 +5,7 @@ This script defines the relevant helper functions for main.py
 """
 
 #Standard Python imports
-import time, re, logging, random, requests 
+import time, re, logging, random, requests, boto3, json
 
 #Clustering imports
 from scipy.cluster.hierarchy import cut_tree
@@ -14,14 +14,32 @@ from sklearn.cluster import KMeans
 #Custom script imports
 from scripts import SpotifyUser, Contacter
 
-#Really insecure, but here nontheless
-AUTH_HASH = "Basic N2VjNDAzOGRlMTE4NGUyZmIwYTFjYWYxMzM1MmUyOTU6MThmYTU5ZTBkNDYxNGMxMzlmNGM2MTAyZjViYzk2NWE="
 
 #Set random seed for reproducibility
 random.seed(420)
 
 #Logging formatter
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+
+
+
+def gatherAuthInfoAWS():
+    secrets_client = boto3.client('secretsmanager')
+    secret_info = secrets_client.get_secret_value('radialspotifyauthcreds')
+    secrets =  json.loads(secret_info['SecretString'])
+
+    formatted_secrets = {}
+
+    for secret in secrets:
+        formatted_secrets[secret['Key']] = secret['Value']
+
+    return formatted_secrets
+        
+
+# AUTH HASH HERE
+AUTH_HASH = gatherAuthInfoAWS()['radial-spotify-auth-hash']
 
 
 
