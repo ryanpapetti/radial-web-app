@@ -64,6 +64,7 @@ class Contacter:
                 json.dump(spotifyState, writer)
         self.accessToken = spotifyState['accessToken']
         self.formAccessHeaderfromToken()
+
     
 
     def contact_api(self, endpoint, additional_request_parameters = None, contact_type = 'get', data_params = None):
