@@ -6,6 +6,7 @@ This script defines the relevant helper functions for main.py
 
 #Standard Python imports
 import time, re, logging, random, requests, boto3, json
+from botocore.errorfactory import ClientError
 
 #Clustering imports
 from scipy.cluster.hierarchy import cut_tree
@@ -21,6 +22,30 @@ random.seed(420)
 #Logging formatter
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+
+
+
+
+def createUserDataStructure(refresh_token, user_id, user_name):
+    
+    # create s3 client
+    s3_client = boto3.client('s3')
+    bucket = s3_client.get_object('radial-web-app-data')
+    # check if user_id is already in the folder
+    try:
+        s3_client.head_object(Bucket='radial-web-app-data', Key=f'{user_id}/')
+        # if it is, then check access token
+        user_auth_info = s3_client.get_object(Bucket='radial-web-app-data', Key=f"{user_id}/auth.json")
+    except ClientError:
+        # User is Not found
+        pass
+
+    
+    # if it isnt, make the folder and add info
+    
+    
+    pass
 
 
 
