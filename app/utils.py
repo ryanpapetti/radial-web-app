@@ -128,7 +128,7 @@ def upload_data_to_bucket(bucket_arn:str,uploadable_data:Union[list,dict,str], d
 
 
 def read_data_from_bucket(bucket_name,file_name):
-    pass
+    return boto3.client('s3').get_object(Bucket=bucket_name, Key=file_name)["Body"].read().decode()
 
 
 
