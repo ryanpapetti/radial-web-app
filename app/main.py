@@ -169,11 +169,10 @@ def callback():
 
     #Make cursor for database 
     db_connection = create_db_connection(db_secret_name=DATABASE_SECRET_NAME)
-    cursor = db_connection.cursor()
 
 
     #Creating data structures for user
-    initUserDataStructures(cursor,refresh_token, access_token, expires_in, user_id, user_display_name)
+    initUserDataStructures(db_connection,refresh_token, access_token, expires_in, user_id, user_display_name)
 
     #log statement to confirm execution of function
     app.logger.info(msg='Set user')
@@ -228,7 +227,9 @@ def clustertracks():
 
 
     #Retrieve relevant user data to create obj
-    retrieved_id, retrieved_display_name, retrieved_access_token = create_db_connection().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
+    cursor = create_db_connection(DATABASE_SECRET_NAME).cursor()
+    cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+    retrieved_id, retrieved_display_name, retrieved_access_token = cursor.fetchone()[:3]
 
     app.logger.info(f"gathered the following from the db: {retrieved_id} vs {spotify_user_id}, {retrieved_display_name}, {retrieved_access_token}")
     
@@ -306,7 +307,12 @@ def clusteringresults():
     #     prepared_playlists = json.load(reader) 
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
     chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
-    retrieved_id, retrieved_display_name, retrieved_access_token = create_db_connection().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}"').fetchone()[:3]
+
+    cursor = create_db_connection(DATABASE_SECRET_NAME).cursor()
+    cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+
+
+    retrieved_id, retrieved_display_name, retrieved_access_token = cursor.fetchone()[:3]
     #Establish authorization header for posting to Spotify
     auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
@@ -351,7 +357,10 @@ def deploy_cluster(cluster_id):
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
 
     #Retrieve relevant data
-    retrieved_id, retrieved_display_name, retrieved_access_token = create_db_connection(DATABASE_SECRET_NAME).cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
+    cursor = create_db_connection(DATABASE_SECRET_NAME).cursor()
+    cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+    
+    retrieved_id, retrieved_display_name, retrieved_access_token = cursor.fetchone()[:3]
 
     #Logging for debugging
     app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")

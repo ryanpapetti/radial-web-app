@@ -97,7 +97,7 @@ def close_connection(db):
 
 
 
-def user_exists(s3_client, user_id):
+def user_s3_exists(s3_client, user_id):
     # checks if user exists
     # really should be done with a database
     # create s3 client
@@ -108,6 +108,13 @@ def user_exists(s3_client, user_id):
         # User is Not found
         return False
 
+
+
+
+def user_db_exists(db_cursor, user_id):
+    sql_statement = f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}"'
+    logging.info(f"{db_cursor.execute(sql_statement)}")
+    return db_cursor.execute(sql_statement)
 
 
 
@@ -136,15 +143,14 @@ def read_data_from_bucket(bucket_name,file_name):
 
 
 
-def initUserDataStructures(db_cursor,refresh_token, access_token, expires_in, user_id, user_name):
+def initUserDataStructures(db_connection,refresh_token, access_token, expires_in, user_id, user_name):
+    db_cursor = db_connection.cursor()
     
-    # create s3 client
-    s3_client = boto3.client('s3')
-    if user_exists(s3_client,user_id):
+    if user_db_exists(db_cursor,user_id):
         logging.info('USER DOES EXIST')
         #now check if the access token is expired - if it is then we need to refresh it
-        user_data = db_cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;').fetchone()
-        recorded_expiration = user_data[-1]
+        db_cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;')
+        recorded_expiration = db_cursor.fetchone()[-1]
 
         #if the access token IS expired, refresh it 
         if time.time() > int(recorded_expiration):
@@ -165,6 +171,10 @@ def initUserDataStructures(db_cursor,refresh_token, access_token, expires_in, us
         logging.debug(msg=f"VALUES: {insertable_values}")
 
         db_cursor.execute(insert_statement, insertable_values)
+    
+    
+    db_connection.commit()
+    
     return True
 
 
