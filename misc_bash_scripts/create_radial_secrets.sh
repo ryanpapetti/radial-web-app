@@ -1,4 +1,4 @@
 
 aws secretsmanager create-secret \
-    --name radialwebappauthcreds \
-    --secret-string file://../credentials/radial_auth.json
+    --name radialspotifyauthcreds \
+    --secret-string file://../credentials/radial_spotify_auth.json

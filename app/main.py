@@ -92,7 +92,7 @@ def close_connection(db):
 
 # Client Keys - these need to be changed prior to non-beta production
 CLIENT_ID = "7ec4038de1184e2fb0a1caf13352e295"
-CLIENT_SECRET = '18fa59e0d4614c139f4c6102f5bc965a'
+CLIENT_SECRET = "18fa59e0d4614c139f4c6102f5bc965a"
 
 # Spotify URLS
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
