@@ -408,7 +408,6 @@ def deploy_cluster(cluster_id):
     
 
 
-
 #RUN THE FLASK SCRIPT EITHER LOCALLY OR ON SERVER
 if __name__ == "__main__":
     if DEBUG_MODE:
