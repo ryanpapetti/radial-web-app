@@ -303,7 +303,7 @@ def clusteringresults():
     app.logger.info(f"{request.args}")
     spotify_user_id = request.args.get('spotify_user_id')
     
-    prepared_playlists = read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/prepared_playlists.json")
+    prepared_playlists = json.loads(read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/prepared_playlists.json"))
     
     # with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
     #     prepared_playlists = json.load(reader) 
@@ -349,7 +349,7 @@ def deploy_cluster(cluster_id):
     #Gathering relevant data to post
     spotify_user_id = request.args.get('spotify_user_id')
 
-    total_organized_playlist_data = read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/total_organized_playlist_data.json")
+    total_organized_playlist_data = json.loads(read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/total_organized_playlist_data.json"))
 
     # with open(f'{USER_DATA_PATH}/{spotify_user_id}/total_organized_playlist_data.json') as reader:
     #     total_organized_playlist_data = json.load(reader) 
