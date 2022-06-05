@@ -6,3 +6,4 @@ flask_session/
 app/app_data/user_data/
 *.pem
 credentials/
+shell_scripts/
