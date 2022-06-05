@@ -4,8 +4,8 @@ USE radial_app;
 CREATE TABLE IF NOT EXISTS RadialUsers (
     SpotifyID varchar(255) PRIMARY KEY,
     DisplayName varchar(255),
-    AccessToken varchar(255),
-    RefreshToken varchar(255),
+    AccessToken varchar(511),
+    RefreshToken varchar(511),
     AccessExpires int
 );
 

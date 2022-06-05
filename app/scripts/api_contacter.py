@@ -89,7 +89,8 @@ class Contacter:
             logging.info('Successful request')
             return response
         except AssertionError:
-            logging.info('Unsuccessful request')
+            logging.info('Unsuccessful request: dumping response info and headers below')
+            # logging.info(f"ACCESS HEADER: {self.accessHeader}")
             logging.info(response.status_code)
             logging.info(response.text)
             raise AssertionError(f'There was an unsuccessful request using {endpoint}')

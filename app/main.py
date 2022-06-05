@@ -147,6 +147,7 @@ def callback():
     
     # Retrieve and log releveant data
     response_data = json.loads(post_request.text)
+    app.logger.info("RESPONSE DATA")
     app.logger.info(f"{response_data}")
     access_token = response_data["access_token"]
     refresh_token = response_data["refresh_token"]
@@ -243,6 +244,7 @@ def clustertracks():
     app.logger.info(msg='Gathering entirety of user track library and preparing for clustering')
     user_prepared_data = prepare_data(user_obj)
 
+
     #Temporarily store in a CSV file for debugging purposes
     user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/user_prepared_data.csv')
 
@@ -271,7 +273,7 @@ def clustertracks():
     app.logger.info(msg='Dumped user cluster results to JSON')
 
     #Insert clustering parameters for statistical purposes 
-    insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(?,?, ?, ?)'
+    insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(%s,%s, %s, %s)'
     insertable_values = (str(uuid.uuid4()), retrieved_id, chosen_algorithm,chosen_clusters)
     db_connection = create_db_connection(DATABASE_SECRET_NAME)
     cursor = db_connection.cursor()

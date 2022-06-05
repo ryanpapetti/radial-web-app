@@ -150,18 +150,18 @@ def initUserDataStructures(db_connection,refresh_token, access_token, expires_in
         logging.info('USER DOES EXIST')
         #now check if the access token is expired - if it is then we need to refresh it
         db_cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;')
-        recorded_expiration = db_cursor.fetchone()[-1]
+        # recorded_expiration = db_cursor.fetchone()[-1]
 
         #if the access token IS expired, refresh it 
-        if time.time() > int(recorded_expiration):
+        # if time.time() > int(recorded_expiration):
             #refresh token
-            refresh_token_data = refreshTheToken(refresh_token)
-            access_token = refresh_token_data['accessToken']
-            expires_in = refresh_token_data['expiresAt']
+        refresh_token_data = refreshTheToken(refresh_token)
+        access_token = refresh_token_data['accessToken']
+        expires_in = refresh_token_data['expiresAt']
 
         #Update user with new data regardless
-        replace_statement = 'UPDATE RadialUsers SET RefreshToken=%s, AccessExpires=%s WHERE SpotifyId=' + f'"{user_id}";'
-        replaceable_values = (refresh_token, expires_in + int(time.time()))
+        replace_statement = 'UPDATE RadialUsers SET AccessToken=%s, RefreshToken=%s, AccessExpires=%s WHERE SpotifyId=' + f'"{user_id}";'
+        replaceable_values = (access_token, refresh_token, expires_in + int(time.time()))
         # app.logger.info(f"updating with these values to db {replaceable_values}")
         db_cursor.execute(replace_statement, replaceable_values)
     else:
@@ -217,6 +217,7 @@ def refreshTheToken(refreshToken):
 
     spotifyToken = response.json()
 
+    logging.info("REFRESH TOKEN INFO")
     logging.info(spotifyToken)
 
     # Place the expiration time (current time + almost an hour), and access token into the json
