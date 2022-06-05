@@ -110,9 +110,9 @@ def user_s3_exists(s3_client, user_id, optional_file=''):
 
 
 def user_db_exists(db_cursor, user_id):
-    sql_statement = f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}"'
-    logging.info(f"{db_cursor.execute(sql_statement)}")
-    return db_cursor.execute(sql_statement)
+    sql_statement = f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}";'
+    db_cursor.execute(sql_statement)
+    return bool(db_cursor.fetchone())
 
 
 

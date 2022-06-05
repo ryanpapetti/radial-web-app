@@ -14,7 +14,7 @@ from flask.helpers import make_response
 from urllib.parse import quote
 
 #Explicit function imports from utils.py file 
-from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket, read_data_from_bucket, user_db_exists, user_s3_exists
+from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket, read_data_from_bucket, user_s3_exists
 
 
 
@@ -215,32 +215,31 @@ def clustertracks():
     spotify_user_id = request.args.get('spotify_user_id')
     chosen_algorithm = request.form.get('chosen_algorithm')
     chosen_clusters = int(request.form.get('chosen_clusters'))
-    
-    #Perform temporary validation that will be soon deprecated
-    if chosen_clusters not in [5,9,13]:
-        raise AssertionError(f'THE PASSSED CLUSTER SIZE IS INVALID: {chosen_clusters}')
 
 
     #Retrieve relevant user data to create obj
     cursor = create_db_connection(DATABASE_SECRET_NAME).cursor()
-    cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
-    retrieved_id, retrieved_display_name, retrieved_access_token = cursor.fetchone()[:3]
-
-    app.logger.info(f"gathered the following from the db: {retrieved_id} vs {spotify_user_id}, {retrieved_display_name}, {retrieved_access_token}")
+    try:
+        cursor.execute(f'SELECT AccessToken FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+        retrieved_access_token = cursor.fetchone()[0]
     
+    except:
+        return make_response('There was a problem collecting the access token from the database: possible invalid access token or user id', 400)
+    
+
 
     #Create the user object from the access token 
     user_obj = prime_user_from_access_token(spotify_user_id, retrieved_access_token)
 
 
-    # Check if user prepared data laready exists
+    # Check if user prepared data already exists
     
     s3_client = boto3.client('s3')
 
-    if user_s3_exists(s3_client, retrieved_id, optional_file='user_prepared_data.csv'):
+    if user_s3_exists(s3_client, spotify_user_id, optional_file='user_prepared_data.csv'):
         #data already exist so let's return it
         app.logger.info('The user already has data that exist, hence collect it')
-        user_prepared_data = pd.read_csv(f'{RADIAL_BUCKET}/{retrieved_id}/labelled_data.csv', index_col=0)
+        user_prepared_data = pd.read_csv(f'{RADIAL_BUCKET}/{spotify_user_id}/labelled_data.csv', index_col=0)
         app.logger.info('Collected user data from bucket successfully')
 
     else:
@@ -248,41 +247,58 @@ def clustertracks():
 
         #Begin gathering user clustering data
         app.logger.info(msg='Gathering entirety of user track library and preparing for clustering')
-        user_prepared_data = prepare_data(user_obj)
+
+        try:
+            user_prepared_data = prepare_data(user_obj)
+        
+        except AssertionError as e:
+            return make_response(f'THERE WAS A PROBLEM COLLECTING THE DATA AND IS LIKELY RELATED TO FAULTY ACCESS TOKEN: {e}', 400)
 
 
         #Temporarily store in a CSV file for debugging purposes
-        user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/user_prepared_data.csv')
+        user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{spotify_user_id}/user_prepared_data.csv')
 
         app.logger.info(msg='Data successfully gathered and prepared')
 
     #Execute clustering of user track data with given parameters
     app.logger.info(f'PREPARING TO CLUSTER DATA WITH {chosen_algorithm} {chosen_clusters}')
 
-    labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
+
+
+    try:
+
+        labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
+        
+        #Temporarily store for debugging purposes
+        labelled_data.to_csv(f'{RADIAL_BUCKET}/{spotify_user_id}/labelled_data.csv')
+        app.logger.info(msg='Data clustered')
+
+
+        #Finally, prepare the user playlists for rendering and display
+        prepared_playlists = prepare_playlists(user_obj,labelled_data)
     
-    #Temporarily store for debugging purposes
-    labelled_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/labelled_data.csv')
-    app.logger.info(msg='Data clustered')
+    except:
+        return make_response('THERE WAS A PROBLEM CLUSTERING THE DATA', 400)
 
 
-    #Finally, prepare the user playlists for rendering and display
-    prepared_playlists = prepare_playlists(user_obj,labelled_data)
-    
+    upload_data_to_bucket(RADIAL_BUCKET_NAME,prepared_playlists, f"{spotify_user_id}/prepared_playlists.json")
+
+    app.logger.info(msg='Dumped user cluster results to JSON in proper bucket')
 
 
-    upload_data_to_bucket(RADIAL_BUCKET_NAME,prepared_playlists, f"{retrieved_id}/prepared_playlists.json")
+    try:
 
-    app.logger.info(msg='Dumped user cluster results to JSON')
+        #Insert clustering parameters for statistical purposes 
+        insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(%s,%s, %s, %s)'
+        insertable_values = (str(uuid.uuid4()), spotify_user_id, chosen_algorithm,chosen_clusters)
+        db_connection = create_db_connection(DATABASE_SECRET_NAME)
+        cursor = db_connection.cursor()
+        cursor.execute(insert_statement, insertable_values)
+        db_connection.commit()
+        cursor.close()
 
-    #Insert clustering parameters for statistical purposes 
-    insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(%s,%s, %s, %s)'
-    insertable_values = (str(uuid.uuid4()), retrieved_id, chosen_algorithm,chosen_clusters)
-    db_connection = create_db_connection(DATABASE_SECRET_NAME)
-    cursor = db_connection.cursor()
-    cursor.execute(insert_statement, insertable_values)
-    db_connection.commit()
-    cursor.close()
+    except:
+        return make_response(f"FINAL INSERTION INTO DB FAILED", 400)
 
 
     #Create final response to indicate successful clustering
