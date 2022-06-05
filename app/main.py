@@ -6,7 +6,7 @@ This script runs the Flask application and performs all routing tasks
 
 
 #Standard Python imports
-import json, random, uuid, requests
+import json, random, uuid, requests, boto3, pandas as pd
 
 #Flask imports
 from flask import Flask, request, redirect, render_template, url_for
@@ -14,7 +14,7 @@ from flask.helpers import make_response
 from urllib.parse import quote
 
 #Explicit function imports from utils.py file 
-from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket, read_data_from_bucket
+from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket, read_data_from_bucket, user_db_exists, user_s3_exists
 
 
 
@@ -238,34 +238,26 @@ def clustertracks():
 
     # something like if user_prepared_data exists in their directory then retrieve that instead
     
+    s3_client = boto3.client('s3')
+
+    if user_s3_exists(s3_client, retrieved_id, optional_file='user_prepared_data.csv'):
+        #data already exist so let's return it
+        app.logger.info('The user already has data that exist, hence collect it')
+        user_prepared_data = pd.read_csv(f'{RADIAL_BUCKET}/{retrieved_id}/labelled_data.csv', index_col=0)
+        app.logger.info('Collected user data from bucket successfully')
+
+    else:
+        # data does not exist so we need to collect
+
+        #Begin gathering user clustering data
+        app.logger.info(msg='Gathering entirety of user track library and preparing for clustering')
+        user_prepared_data = prepare_data(user_obj)
 
 
+        #Temporarily store in a CSV file for debugging purposes
+        user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/user_prepared_data.csv')
 
-
-
-
-
-    # if it does not then collect the data
-
-
-    #Begin gathering user clustering data
-    app.logger.info(msg='Gathering entirety of user track library and preparing for clustering')
-    user_prepared_data = prepare_data(user_obj)
-
-
-    #Temporarily store in a CSV file for debugging purposes
-    user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/user_prepared_data.csv')
-
-    app.logger.info(msg='Data successfully gathered and prepared')
-
-
-
-
-
-
-
-
-
+        app.logger.info(msg='Data successfully gathered and prepared')
 
     #Execute clustering of user track data with given parameters
     app.logger.info(f'PREPARING TO CLUSTER DATA WITH {chosen_algorithm} {chosen_clusters}')
