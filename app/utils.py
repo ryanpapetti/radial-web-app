@@ -334,7 +334,7 @@ def prepare_playlists(user,labelled_data):
     return user.generate_uploadable_playlists(labelled_data)
 
 
-def get_cluster_playlist_metadata(clustered_tracks):
+def get_cluster_playlist_metadata(clustered_tracks:dict):
     """
     get the relevant metadata for the cluster for further organization
 
@@ -344,6 +344,9 @@ def get_cluster_playlist_metadata(clustered_tracks):
     Returns:
         Dictionary: JSON structure of cluster metadata
     """
+    
+    # sometimes a string could get passed and I should be better off doing some type checking here
+    
     total_tracks = sum([len(tracks) for tracks in clustered_tracks.values()])
     total_organized_playlist_data = {}
     for playlist, tracks in clustered_tracks.items():
