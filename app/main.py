@@ -50,9 +50,9 @@ DATABASE_SECRET_NAME = 'radialdbcredentials'
 # DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
 # USER_DATA_PATH = 'app_data/user_data'
 
-
-RADIAL_BUCKET = "s3://radial-web-app-data"
-RADIAL_BUCKET_ARN = "arn:aws:s3:::radial-web-app-data"
+RADIAL_BUCKET_NAME = "radial-web-app-data"
+RADIAL_BUCKET = f"s3://{RADIAL_BUCKET_NAME}"
+RADIAL_BUCKET_ARN = f"arn:aws:s3:::{RADIAL_BUCKET_NAME}"
 
 
 # Client Keys - these need to be changed prior to non-beta production
@@ -265,7 +265,7 @@ def clustertracks():
     
 
 
-    upload_data_to_bucket(RADIAL_BUCKET_ARN,prepared_playlists, f"{retrieved_id}/prepared_playlists.json")
+    upload_data_to_bucket(RADIAL_BUCKET_NAME,prepared_playlists, f"{retrieved_id}/prepared_playlists.json")
 
     
     # with open(f'app_data/user_data/{retrieved_id}/prepared_playlists.json','w') as writer:
@@ -303,7 +303,7 @@ def clusteringresults():
     app.logger.info(f"{request.args}")
     spotify_user_id = request.args.get('spotify_user_id')
     
-    prepared_playlists = read_data_from_bucket(RADIAL_BUCKET,f"{spotify_user_id}/prepared_playlists.json")
+    prepared_playlists = read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/prepared_playlists.json")
     
     # with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
     #     prepared_playlists = json.load(reader) 
@@ -321,7 +321,7 @@ def clusteringresults():
     #Retrieve relevant displayable data for clustering results and save
     displayable_data, total_organized_playlist_data = organize_cluster_data_for_display(auth_header,prepared_playlists)
 
-    upload_data_to_bucket(RADIAL_BUCKET_ARN,total_organized_playlist_data, f"{retrieved_id}/total_organized_playlist_data.json")
+    upload_data_to_bucket(RADIAL_BUCKET_NAME,total_organized_playlist_data, f"{retrieved_id}/total_organized_playlist_data.json")
 
     # with open(f'app_data/user_data/{retrieved_id}/total_organized_playlist_data.json','w') as writer:
     #     json.dump(total_organized_playlist_data,writer)
@@ -349,7 +349,7 @@ def deploy_cluster(cluster_id):
     #Gathering relevant data to post
     spotify_user_id = request.args.get('spotify_user_id')
 
-    total_organized_playlist_data = read_data_from_bucket(RADIAL_BUCKET,f"{spotify_user_id}/total_organized_playlist_data.json")
+    total_organized_playlist_data = read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/total_organized_playlist_data.json")
 
     # with open(f'{USER_DATA_PATH}/{spotify_user_id}/total_organized_playlist_data.json') as reader:
     #     total_organized_playlist_data = json.load(reader) 
