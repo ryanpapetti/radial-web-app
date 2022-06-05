@@ -233,10 +233,7 @@ def clustertracks():
     user_obj = prime_user_from_access_token(spotify_user_id, retrieved_access_token)
 
 
-    # THERE NEEDS TO BE A CHECK HERE TO SEE IF THE COLLECTED DATA ALREADY EXIST. IF THEY DO, THEN DO NOT WASTE THE TIME - PLEASE! 
-
-
-    # something like if user_prepared_data exists in their directory then retrieve that instead
+    # Check if user prepared data laready exists
     
     s3_client = boto3.client('s3')
 
