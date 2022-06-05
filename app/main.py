@@ -39,16 +39,10 @@ else:
     REDIRECT_URI = "{}/callback".format(CLIENT_SIDE_URL)
     SCHEME='https'
 
-#Former session code that will be kept for future 
-# app.config["SESSION_PERMANENT"] = False
-# app.config['SESSION_TYPE'] = 'filesystem'
-# app.secret_key = str(uuid.uuid4())
-# Session(app)
 
 #Initialize contact to database
 DATABASE_SECRET_NAME = 'radialdbcredentials'
-# DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
-# USER_DATA_PATH = 'app_data/user_data'
+
 
 RADIAL_BUCKET_NAME = "radial-web-app-data"
 RADIAL_BUCKET = f"s3://{RADIAL_BUCKET_NAME}"
@@ -234,10 +228,12 @@ def clustertracks():
 
     app.logger.info(f"gathered the following from the db: {retrieved_id} vs {spotify_user_id}, {retrieved_display_name}, {retrieved_access_token}")
     
-    # assert spotify_user_id == retrieved_id
 
     #Create the user object from the access token 
     user_obj = prime_user_from_access_token(spotify_user_id, retrieved_access_token)
+
+
+    # THERE NEEDS TO BE A CHECK HERE TO SEE IF THE COLLECTED DATA ALREADY EXIST. IF THEY DO, THEN DO NOT WASTE THE TIME - PLEASE! 
     
 
     #Begin gathering user clustering data
@@ -267,9 +263,6 @@ def clustertracks():
 
     upload_data_to_bucket(RADIAL_BUCKET_NAME,prepared_playlists, f"{retrieved_id}/prepared_playlists.json")
 
-    
-    # with open(f'app_data/user_data/{retrieved_id}/prepared_playlists.json','w') as writer:
-    #     json.dump(prepared_playlists,writer)
     app.logger.info(msg='Dumped user cluster results to JSON')
 
     #Insert clustering parameters for statistical purposes 
@@ -304,9 +297,7 @@ def clusteringresults():
     spotify_user_id = request.args.get('spotify_user_id')
     
     prepared_playlists = json.loads(read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/prepared_playlists.json"))
-    
-    # with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
-    #     prepared_playlists = json.load(reader) 
+
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
     chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
 
@@ -323,8 +314,6 @@ def clusteringresults():
 
     upload_data_to_bucket(RADIAL_BUCKET_NAME,total_organized_playlist_data, f"{retrieved_id}/total_organized_playlist_data.json")
 
-    # with open(f'app_data/user_data/{retrieved_id}/total_organized_playlist_data.json','w') as writer:
-    #     json.dump(total_organized_playlist_data,writer)
 
     # render the clusteringresults page with passed data
     return render_template("clusteringresults.html", displayable_data = displayable_data, total_organized_playlist_data = total_organized_playlist_data, chosen_algorithm = chosen_algorithm, chosen_clusters = chosen_clusters, spotify_user_id = spotify_user_id)
@@ -351,8 +340,6 @@ def deploy_cluster(cluster_id):
 
     total_organized_playlist_data = json.loads(read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/total_organized_playlist_data.json"))
 
-    # with open(f'{USER_DATA_PATH}/{spotify_user_id}/total_organized_playlist_data.json') as reader:
-    #     total_organized_playlist_data = json.load(reader) 
     
     #weird ampsersand issues that require special parsing
     chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
