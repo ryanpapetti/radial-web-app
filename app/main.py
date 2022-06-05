@@ -6,7 +6,7 @@ This script runs the Flask application and performs all routing tasks
 
 
 #Standard Python imports
-import json, random, uuid, boto3, time, os, shutil, requests
+import json, random, uuid, requests
 
 #Flask imports
 from flask import Flask, request, redirect, render_template, url_for
@@ -234,7 +234,19 @@ def clustertracks():
 
 
     # THERE NEEDS TO BE A CHECK HERE TO SEE IF THE COLLECTED DATA ALREADY EXIST. IF THEY DO, THEN DO NOT WASTE THE TIME - PLEASE! 
+
+
+    # something like if user_prepared_data exists in their directory then retrieve that instead
     
+
+
+
+
+
+
+
+    # if it does not then collect the data
+
 
     #Begin gathering user clustering data
     app.logger.info(msg='Gathering entirety of user track library and preparing for clustering')
@@ -245,6 +257,15 @@ def clustertracks():
     user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{retrieved_id}/user_prepared_data.csv')
 
     app.logger.info(msg='Data successfully gathered and prepared')
+
+
+
+
+
+
+
+
+
 
     #Execute clustering of user track data with given parameters
     app.logger.info(f'PREPARING TO CLUSTER DATA WITH {chosen_algorithm} {chosen_clusters}')

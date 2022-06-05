@@ -97,12 +97,10 @@ def close_connection(db):
 
 
 
-def user_s3_exists(s3_client, user_id):
-    # checks if user exists
-    # really should be done with a database
-    # create s3 client
+def user_s3_exists(s3_client, user_id, optional_file=''):
+    # checks if user s3 info exists
     try:
-        s3_client.head_object(Bucket='radial-web-app-data', Key=f'{user_id}/')
+        s3_client.head_object(Bucket='radial-web-app-data', Key=f'{user_id}/{optional_file}') #if the file is not passed this will just check if the user exists. if a file is passed it will check if that file exists
         return True
     except ClientError as e:
         # User is Not found
@@ -409,18 +407,3 @@ def organize_cluster_data_for_display(authorization_header,clustered_tracks):
         displayable_data[playlist_id] = tracks_metadata
     
     return displayable_data, total_organized_playlist_data
-
-
-
-# def get_deployed_cluster_obj(deployed_cluster_objs, cluster_id):
-#     cluster_id = int(cluster_id) if type(cluster_id) == str else cluster_id
-#     return deployed_cluster_objs[cluster_id]
-
-# def load_proper_cluster_button(session,cluster_id):
-#     logging.info(f'Passed cluster_id {cluster_id} ({type(cluster_id)})')
-#     if 'DEPLOYED_CLUSTERS_OBJS' in session:
-#         logging.info(f"DEPLOYED CLUSTERS ARE: {session['DEPLOYED_CLUSTERS_OBJS']} ")
-#         logging.info(f"Cluster ID ({cluster_id}) and set of keys of objects ({set(session['DEPLOYED_CLUSTERS_OBJS'].keys())})")
-#         if cluster_id in session['DEPLOYED_CLUSTERS_OBJS']:
-#             return 'listen'
-#     return 'deploy'
