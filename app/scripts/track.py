@@ -32,7 +32,8 @@ class Track:
             # name = track_data['name']
         
         except:
-            logging.info(f"track_json")
+            logging.info('There was a failure creating a track from the following JSON')
+            logging.info(f"{track_json}")
             raise ValueError
 
         return cls(track_id = track_id, duration = duration,  added_at = added_time)
