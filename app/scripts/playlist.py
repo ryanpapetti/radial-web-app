@@ -93,7 +93,8 @@ class Playlist:
             assert self.raw_playlist_items
         
         except AssertionError:
-            logging.info(f"RAW PLAYLIST ITEMS for playlist {self.name} ({self.playlist_id}): {self.raw_playlist_items}")
+            logging.info(f"THERE ARE NO PLAYLIST ITEMS for playlist {self.name} ({self.playlist_id}): {self.raw_playlist_items}")
+            return None
 
 
 
