@@ -32,7 +32,7 @@ class Track:
             # name = track_data['name']
         
         except:
-            logging.log(track_json)
+            logging.info(f"track_json")
             raise ValueError
 
         return cls(track_id = track_id, duration = duration,  added_at = added_time)

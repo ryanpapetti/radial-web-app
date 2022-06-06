@@ -15,8 +15,6 @@ RUN ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
 COPY . .
 
-COPY ~/.aws/ ~/.aws/
-
 #  Create the environment:
 RUN pip3 install --upgrade pip
 RUN pip3 install -r app/requirements.txt
