@@ -181,12 +181,13 @@ class SpotifyUser:
         logging.info('Gathering all playlist info')
         self.get_all_playlist_information(custom_playlist_ids=custom_playlist_ids, save_file_flag=save_file_flag)
         try:
-            for playlist in self.playlists.values():
+            for p_id,playlist in self.playlists.items():
+                logging.info(f'converting tracks in playlist {p_id}')
                 playlist.convert_raw_track_items()
             logging.info('Converted all raw track items')
         except:
             logging.info('Theres an issue with converting the raw track items')
-            logging.info(f"playlists: {self.playlists.values()}")
+            logging.info(f"playlists: {self.playlists.keys()}")
             raise ValueError('Theres an issue with converting the raw track items')
         
         specified_tracks = self.aggregate_track_ids_across_playlists()
