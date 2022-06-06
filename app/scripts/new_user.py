@@ -186,7 +186,7 @@ class SpotifyUser:
             logging.info('Converted all raw track items')
         except:
             logging.info('Theres an issue with converting the raw track items')
-            logging.info(f"playlists: {self.playlists.values}")
+            logging.info(f"playlists: {self.playlists.values()}")
             raise ValueError('Theres an issue with converting the raw track items')
         
         specified_tracks = self.aggregate_track_ids_across_playlists()
