@@ -93,11 +93,20 @@ class Playlist:
             assert self.raw_playlist_items
         
         except AssertionError:
-            logging.info(f"RAW PLAYLIST ITEMS: {self.raw_playlist_items}")
+            logging.info(f"THERE ARE NO PLAYLIST ITEMS for playlist {self.name} ({self.playlist_id}): {self.raw_playlist_items}")
+            return None
+
 
 
         #goal is to Track() all items and make a new instance variable
-        self.tracks = [Track.create_track_from_json(item) for item in self.raw_playlist_items]
+        self.tracks = []
+        for item in self.raw_playlist_items:
+            if item['track'] is not None:
+                self.tracks.append(Track.create_track_from_json(item))
+            else:
+                logging.info(f'AN EMPTY TRACK WAS FOUND IN PLAYLIST {self.name} ({self.playlist_id})... skipping track')
+            
+        
     
 
     
