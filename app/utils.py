@@ -5,7 +5,11 @@ This script defines the relevant helper functions for main.py
 """
 
 #Standard Python imports
-import time, re, logging, random, requests 
+import time, re, logging, random, requests, boto3, json
+from typing import Union
+from botocore.errorfactory import ClientError
+from botocore.exceptions import ClientError
+import pymysql.cursors
 
 #Clustering imports
 from scipy.cluster.hierarchy import cut_tree
@@ -14,14 +18,180 @@ from sklearn.cluster import KMeans
 #Custom script imports
 from scripts import SpotifyUser, Contacter
 
-#Really insecure, but here nontheless
-AUTH_HASH = "Basic N2VjNDAzOGRlMTE4NGUyZmIwYTFjYWYxMzM1MmUyOTU6MThmYTU5ZTBkNDYxNGMxMzlmNGM2MTAyZjViYzk2NWE="
 
 #Set random seed for reproducibility
 random.seed(420)
 
 #Logging formatter
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+
+
+
+def get_secret(secret_name, region_name = 'us-west-2'):
+    '''
+    FROM AWS DOCUMENTATION
+    '''
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    # In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
+    # See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+    # We rethrow the exception by default.
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'DecryptionFailureException':
+            # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
+            # An error occurred on the server side.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidParameterException':
+            # You provided an invalid value for a parameter.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidRequestException':
+            # You provided a parameter value that is not valid for the current state of the resource.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
+            # We can't find the resource that you asked for.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+    else:
+        # Decrypts secret using the associated KMS key.
+        return get_secret_value_response['SecretString']
+
+
+
+def get_db_info(db_secret_name):
+    return json.loads(get_secret(db_secret_name))
+
+
+
+def create_db_connection(db_secret_name):
+    db_info = get_db_info(db_secret_name)
+    parameters = dict(host=db_info['host'], user=db_info['username'], password=db_info['password'], db=db_info['dbname'], connect_timeout=45, port = 3306)
+    conn = pymysql.connect(**parameters)
+    logging.info('Gathered connection')
+    return conn
+
+
+
+
+def close_connection(db):
+    db.close()
+
+
+
+
+def user_s3_exists(s3_client, user_id, optional_file=''):
+    # checks if user s3 info exists
+    try:
+        s3_client.head_object(Bucket='radial-web-app-data', Key=f'{user_id}/{optional_file}') #if the file is not passed this will just check if the user exists. if a file is passed it will check if that file exists
+        return True
+    except ClientError as e:
+        # User is Not found
+        return False
+
+
+
+
+def user_db_exists(db_cursor, user_id):
+    sql_statement = f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}";'
+    db_cursor.execute(sql_statement)
+    return bool(db_cursor.fetchone())
+
+
+
+
+def upload_data_to_bucket(bucket_arn:str,uploadable_data:Union[list,dict,str], desired_name:str):
+    """
+    upload entire array to bucket as a JSON obj
+    Args:
+        uploadable_data (list)
+        desired_name (str): key for bucket
+    """
+    
+    s3 = boto3.client('s3')
+    s3_args = {'Body':bytes(json.dumps(uploadable_data),'utf-8'), 'Bucket':bucket_arn.split(':')[-1], 'Key':desired_name, 'ContentType':'application/json'}
+    s3.put_object(**s3_args)
+    logging.info('successful upload to bucket')
+
+
+
+
+def read_data_from_bucket(bucket_name,file_name):
+    return boto3.client('s3').get_object(Bucket=bucket_name, Key=file_name)["Body"].read().decode()
+
+
+
+
+
+
+def initUserDataStructures(db_connection,refresh_token, access_token, expires_in, user_id, user_name):
+    db_cursor = db_connection.cursor()
+    
+    if user_db_exists(db_cursor,user_id):
+        logging.info('USER DOES EXIST')
+        #now check if the access token is expired - if it is then we need to refresh it
+        db_cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;')
+        # recorded_expiration = db_cursor.fetchone()[-1]
+
+        #if the access token IS expired, refresh it 
+        # if time.time() > int(recorded_expiration):
+            #refresh token
+        refresh_token_data = refreshTheToken(refresh_token)
+        access_token = refresh_token_data['accessToken']
+        expires_in = refresh_token_data['expiresAt']
+
+        #Update user with new data regardless
+        replace_statement = 'UPDATE RadialUsers SET AccessToken=%s, RefreshToken=%s, AccessExpires=%s WHERE SpotifyId=' + f'"{user_id}";'
+        replaceable_values = (access_token, refresh_token, expires_in + int(time.time()))
+        # app.logger.info(f"updating with these values to db {replaceable_values}")
+        db_cursor.execute(replace_statement, replaceable_values)
+    else:
+        logging.info('BRAND NEW USER ADDING TO DB AND MAKING BUCKET')
+        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(%s,%s,%s,%s,%s);'
+        insertable_values = (user_id,user_name,access_token, refresh_token, expires_in)
+        logging.debug(msg=f"VALUES: {insertable_values}")
+
+        db_cursor.execute(insert_statement, insertable_values)
+    
+    
+    db_connection.commit()
+    
+    return True
+
+
+
+def gatherAuthInfoAWS():
+    secrets_client = boto3.client('secretsmanager')
+    secret_info = secrets_client.get_secret_value(SecretId='radialspotifyauthcreds')
+    secrets =  json.loads(secret_info['SecretString'])
+
+    formatted_secrets = {}
+
+    for secret in secrets:
+        formatted_secrets[secret['Key']] = secret['Value']
+
+    return formatted_secrets
+        
+
+# AUTH HASH HERE
+AUTH_HASH = gatherAuthInfoAWS()['radial-spotify-auth-hash']
 
 
 
@@ -45,6 +215,7 @@ def refreshTheToken(refreshToken):
 
     spotifyToken = response.json()
 
+    logging.info("REFRESH TOKEN INFO")
     logging.info(spotifyToken)
 
     # Place the expiration time (current time + almost an hour), and access token into the json
@@ -161,7 +332,7 @@ def prepare_playlists(user,labelled_data):
     return user.generate_uploadable_playlists(labelled_data)
 
 
-def get_cluster_playlist_metadata(clustered_tracks):
+def get_cluster_playlist_metadata(clustered_tracks:dict):
     """
     get the relevant metadata for the cluster for further organization
 
@@ -171,6 +342,9 @@ def get_cluster_playlist_metadata(clustered_tracks):
     Returns:
         Dictionary: JSON structure of cluster metadata
     """
+    
+    # sometimes a string could get passed and I should be better off doing some type checking here
+    
     total_tracks = sum([len(tracks) for tracks in clustered_tracks.values()])
     total_organized_playlist_data = {}
     for playlist, tracks in clustered_tracks.items():
@@ -233,18 +407,3 @@ def organize_cluster_data_for_display(authorization_header,clustered_tracks):
         displayable_data[playlist_id] = tracks_metadata
     
     return displayable_data, total_organized_playlist_data
-
-
-
-# def get_deployed_cluster_obj(deployed_cluster_objs, cluster_id):
-#     cluster_id = int(cluster_id) if type(cluster_id) == str else cluster_id
-#     return deployed_cluster_objs[cluster_id]
-
-# def load_proper_cluster_button(session,cluster_id):
-#     logging.info(f'Passed cluster_id {cluster_id} ({type(cluster_id)})')
-#     if 'DEPLOYED_CLUSTERS_OBJS' in session:
-#         logging.info(f"DEPLOYED CLUSTERS ARE: {session['DEPLOYED_CLUSTERS_OBJS']} ")
-#         logging.info(f"Cluster ID ({cluster_id}) and set of keys of objects ({set(session['DEPLOYED_CLUSTERS_OBJS'].keys())})")
-#         if cluster_id in session['DEPLOYED_CLUSTERS_OBJS']:
-#             return 'listen'
-#     return 'deploy'

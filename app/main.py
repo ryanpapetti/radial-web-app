@@ -6,7 +6,7 @@ This script runs the Flask application and performs all routing tasks
 
 
 #Standard Python imports
-import json, random, uuid, sqlite3, time, os, shutil, requests
+import json, random, uuid, requests, boto3, pandas as pd
 
 #Flask imports
 from flask import Flask, request, redirect, render_template, url_for
@@ -14,7 +14,7 @@ from flask.helpers import make_response
 from urllib.parse import quote
 
 #Explicit function imports from utils.py file 
-from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, refreshTheToken
+from utils import prime_user_from_access_token, prepare_playlists, prepare_data, execute_clustering, gather_cluster_size_from_submission, organize_cluster_data_for_display, gatherAuthInfoAWS, create_db_connection, initUserDataStructures,upload_data_to_bucket, read_data_from_bucket, user_s3_exists
 
 
 
@@ -39,60 +39,20 @@ else:
     REDIRECT_URI = "{}/callback".format(CLIENT_SIDE_URL)
     SCHEME='https'
 
-#Former session code that will be kept for future 
-# app.config["SESSION_PERMANENT"] = False
-# app.config['SESSION_TYPE'] = 'filesystem'
-# app.secret_key = str(uuid.uuid4())
-# Session(app)
 
 #Initialize contact to database
-DATABASE = 'app_data/basic_user_credentials.db'
-DB_CREATION_SCRIPT = 'app_data/create_radial_tables.sql'
-USER_DATA_PATH = 'app_data/user_data'
+DATABASE_SECRET_NAME = 'radialdbcredentials'
 
 
-def get_db():
-    """
-    get_db()
+RADIAL_BUCKET_NAME = "radial-web-app-data"
+RADIAL_BUCKET = f"s3://{RADIAL_BUCKET_NAME}"
+RADIAL_BUCKET_ARN = f"arn:aws:s3:::{RADIAL_BUCKET_NAME}"
 
-    Connects to the global DATABASE file
-
-    Returns:
-        sqlite3 connection
-    """
-    db = sqlite3.connect(DATABASE)
-    return db
-
-
-def init_db():
-    """
-    init_db()
-
-    Formally initializes the database and REMOVES IT  if it already exists.
-    If it does not exist, it creates it from the DB_CREATION_SCRIPT global variable
-
-
-    Returns None
-
-    """
-    with app.app_context():
-        if os.path.exists(DATABASE):
-            os.remove(DATABASE)
-        db = get_db()
-        with app.open_resource(DB_CREATION_SCRIPT, mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-
-#formally initialize database
-init_db()
-
-
-def close_connection(db):
-    db.close()
 
 # Client Keys - these need to be changed prior to non-beta production
-CLIENT_ID = "7ec4038de1184e2fb0a1caf13352e295"
-CLIENT_SECRET = '18fa59e0d4614c139f4c6102f5bc965a'
+radial_keys = gatherAuthInfoAWS()
+CLIENT_ID = radial_keys['radial-spotify-client-id']
+CLIENT_SECRET = radial_keys['radial-spotify-client-secret']
 
 # Spotify URLS
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
@@ -181,10 +141,10 @@ def callback():
     
     # Retrieve and log releveant data
     response_data = json.loads(post_request.text)
+    app.logger.info("RESPONSE DATA")
     app.logger.info(f"{response_data}")
     access_token = response_data["access_token"]
     refresh_token = response_data["refresh_token"]
-    # token_type = response_data["token_type"]
     expires_in = response_data["expires_in"]
 
 
@@ -201,55 +161,13 @@ def callback():
     user_display_name = profile_data['display_name']
 
 
-    #Creating data structures for user
 
     #Make cursor for database 
-    db_connection = get_db()
-    cursor = db_connection.cursor()
+    db_connection = create_db_connection(db_secret_name=DATABASE_SECRET_NAME)
 
-    #Gather all SpotifyIDs in database to determine initialization process with user 
-    all_data = cursor.execute("SELECT SpotifyID FROM RadialUsers;").fetchall()
-    verify_prior_entry = (user_id,) in all_data
-    app.logger.info(f"User already in DB: {verify_prior_entry} ({all_data})")
 
-    #if the user is already in the database
-    if verify_prior_entry:
-        #now check if the access token is expired - if it is then we need to refresh it
-        user_data = cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{user_id}" ORDER BY AccessExpires DESC;').fetchone()
-        recorded_expiration = user_data[-1]
-
-        #if the access token IS expired, refresh it 
-        if time.time() > int(recorded_expiration):
-            #refresh token
-            refresh_token_data = refreshTheToken(refresh_token)
-            access_token = refresh_token_data['accessToken']
-            expires_in = refresh_token_data['expiresAt']
-
-        #Update user with new data regardless
-        replace_statement = f'UPDATE RadialUsers SET RefreshToken=?, AccessExpires=? WHERE SpotifyId="{user_id}";'
-        replaceable_values = (refresh_token, expires_in + int(time.time()))
-        # app.logger.info(f"updating with these values to db {replaceable_values}")
-        cursor.execute(replace_statement, replaceable_values)
-    
-
-    #if the user is BRAND NEW, add them to the database
-    else:
-        app.logger.info('BRAND NEW USER ADDING TO DB')
-        insert_statement = 'INSERT INTO RadialUsers(SpotifyId,DisplayName,AccessToken,RefreshToken,AccessExpires) VALUES(?,?,?,?,?);'
-        insertable_values = (user_id,user_display_name,access_token, refresh_token, expires_in)
-        cursor.execute(insert_statement, insertable_values)
-    
-    db_connection.commit()
-    cursor.close()
-
-    #create temporary user flat file structures 
-
-    #remove flat file path if it already exists
-    if user_id in os.listdir(f"{USER_DATA_PATH}"):
-       shutil.rmtree(f"{USER_DATA_PATH}/{user_id}")
-
-    #make the user's data path
-    os.mkdir(f"{USER_DATA_PATH}/{user_id}")
+    #Creating data structures for user
+    initUserDataStructures(db_connection,refresh_token, access_token, expires_in, user_id, user_display_name)
 
     #log statement to confirm execution of function
     app.logger.info(msg='Set user')
@@ -297,56 +215,90 @@ def clustertracks():
     spotify_user_id = request.args.get('spotify_user_id')
     chosen_algorithm = request.form.get('chosen_algorithm')
     chosen_clusters = int(request.form.get('chosen_clusters'))
-    
-    #Perform temporary validation that will be soon deprecated
-    if chosen_clusters not in [5,9,13]:
-        raise AssertionError(f'THE PASSSED CLUSTER SIZE IS INVALID: {chosen_clusters}')
 
 
     #Retrieve relevant user data to create obj
-    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
-
-    app.logger.info(f"gathered the following from the db: {retrieved_id} vs {spotify_user_id}, {retrieved_display_name}, {retrieved_access_token}")
+    cursor = create_db_connection(DATABASE_SECRET_NAME).cursor()
+    try:
+        cursor.execute(f'SELECT AccessToken FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+        retrieved_access_token = cursor.fetchone()[0]
     
-    # assert spotify_user_id == retrieved_id
+    except:
+        return make_response('There was a problem collecting the access token from the database: possible invalid access token or user id', 400)
+    
+
 
     #Create the user object from the access token 
     user_obj = prime_user_from_access_token(spotify_user_id, retrieved_access_token)
+
+
+    # Check if user prepared data already exists
     
+    s3_client = boto3.client('s3')
 
-    #Begin gathering user clustering data
-    app.logger.info(msg='Gathering entirety of user track library and preparing for clustering')
-    user_prepared_data = prepare_data(user_obj)
+    if user_s3_exists(s3_client, spotify_user_id, optional_file='user_prepared_data.csv'):
+        #data already exist so let's return it
+        app.logger.info('The user already has data that exist, hence collect it')
+        user_prepared_data = pd.read_csv(f'{RADIAL_BUCKET}/{spotify_user_id}/labelled_data.csv', index_col=0)
+        app.logger.info('Collected user data from bucket successfully')
 
-    #Temporarily store in a CSV file for debugging purposes
-    user_prepared_data.to_csv(f'app_data/user_data/{retrieved_id}/user_prepared_data.csv')
+    else:
+        # data does not exist so we need to collect
 
-    app.logger.info(msg='Data successfully gathered and prepared')
+        #Begin gathering user clustering data
+        app.logger.info(msg='Gathering entirety of user track library and preparing for clustering')
+
+        try:
+            user_prepared_data = prepare_data(user_obj)
+        
+        except AssertionError as e:
+            return make_response(f'THERE WAS A PROBLEM COLLECTING THE DATA AND IS LIKELY RELATED TO FAULTY ACCESS TOKEN: {e}', 400)
+
+
+        #Temporarily store in a CSV file for debugging purposes
+        user_prepared_data.to_csv(f'{RADIAL_BUCKET}/{spotify_user_id}/user_prepared_data.csv')
+
+        app.logger.info(msg='Data successfully gathered and prepared')
 
     #Execute clustering of user track data with given parameters
     app.logger.info(f'PREPARING TO CLUSTER DATA WITH {chosen_algorithm} {chosen_clusters}')
 
-    labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
+
+
+    try:
+
+        labelled_data = execute_clustering(chosen_algorithm,chosen_clusters,user_prepared_data)
+        
+        #Temporarily store for debugging purposes
+        labelled_data.to_csv(f'{RADIAL_BUCKET}/{spotify_user_id}/labelled_data.csv')
+        app.logger.info(msg='Data clustered')
+
+
+        #Finally, prepare the user playlists for rendering and display
+        prepared_playlists = prepare_playlists(user_obj,labelled_data)
     
-    #Temporarily store for debugging purposes
-    labelled_data.to_csv(f'app_data/user_data/{retrieved_id}/labelled_data.csv')
-    app.logger.info(msg='Data clustered')
+    except:
+        return make_response('THERE WAS A PROBLEM CLUSTERING THE DATA', 400)
 
 
-    #Finally, prepare the user playlists for rendering and display
-    prepared_playlists = prepare_playlists(user_obj,labelled_data)
-    with open(f'app_data/user_data/{retrieved_id}/prepared_playlists.json','w') as writer:
-        json.dump(prepared_playlists,writer)
-    app.logger.info(msg='Dumped user cluster results to JSON')
+    upload_data_to_bucket(RADIAL_BUCKET_NAME,prepared_playlists, f"{spotify_user_id}/prepared_playlists.json")
 
-    #Insert clustering parameters for statistical purposes 
-    insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(?,?, ?, ?)'
-    insertable_values = (str(uuid.uuid4()), retrieved_id, chosen_algorithm,chosen_clusters)
-    db_connection = get_db()
-    cursor = db_connection.cursor()
-    cursor.execute(insert_statement, insertable_values)
-    db_connection.commit()
-    cursor.close()
+    app.logger.info(msg='Dumped user cluster results to JSON in proper bucket')
+
+
+    try:
+
+        #Insert clustering parameters for statistical purposes 
+        insert_statement = 'INSERT INTO Clusterings(ClusteringID,SpotifyID,ClusterAlgorithm,ClustersChosen) VALUES(%s,%s, %s, %s)'
+        insertable_values = (str(uuid.uuid4()), spotify_user_id, chosen_algorithm,chosen_clusters)
+        db_connection = create_db_connection(DATABASE_SECRET_NAME)
+        cursor = db_connection.cursor()
+        cursor.execute(insert_statement, insertable_values)
+        db_connection.commit()
+        cursor.close()
+
+    except:
+        return make_response(f"FINAL INSERTION INTO DB FAILED", 400)
 
 
     #Create final response to indicate successful clustering
@@ -369,19 +321,25 @@ def clusteringresults():
     #Gather relevant data
     app.logger.info(f"{request.args}")
     spotify_user_id = request.args.get('spotify_user_id')
-    with open(f'{USER_DATA_PATH}/{spotify_user_id}/prepared_playlists.json') as reader:
-        prepared_playlists = json.load(reader) 
+    
+    prepared_playlists = json.loads(read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/prepared_playlists.json"))
+
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
     chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
-    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}"').fetchone()[:3]
+
+    cursor = create_db_connection(DATABASE_SECRET_NAME).cursor()
+    cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+
+
+    retrieved_id, retrieved_display_name, retrieved_access_token = cursor.fetchone()[:3]
     #Establish authorization header for posting to Spotify
     auth_header = {'Authorization': f'Bearer {retrieved_access_token}'}
 
     #Retrieve relevant displayable data for clustering results and save
     displayable_data, total_organized_playlist_data = organize_cluster_data_for_display(auth_header,prepared_playlists)
 
-    with open(f'app_data/user_data/{retrieved_id}/total_organized_playlist_data.json','w') as writer:
-        json.dump(total_organized_playlist_data,writer)
+    upload_data_to_bucket(RADIAL_BUCKET_NAME,total_organized_playlist_data, f"{retrieved_id}/total_organized_playlist_data.json")
+
 
     # render the clusteringresults page with passed data
     return render_template("clusteringresults.html", displayable_data = displayable_data, total_organized_playlist_data = total_organized_playlist_data, chosen_algorithm = chosen_algorithm, chosen_clusters = chosen_clusters, spotify_user_id = spotify_user_id)
@@ -405,15 +363,19 @@ def deploy_cluster(cluster_id):
 
     #Gathering relevant data to post
     spotify_user_id = request.args.get('spotify_user_id')
-    with open(f'{USER_DATA_PATH}/{spotify_user_id}/total_organized_playlist_data.json') as reader:
-        total_organized_playlist_data = json.load(reader) 
+
+    total_organized_playlist_data = json.loads(read_data_from_bucket(RADIAL_BUCKET_NAME,f"{spotify_user_id}/total_organized_playlist_data.json"))
+
     
     #weird ampsersand issues that require special parsing
     chosen_algorithm = request.args.get('chosen_algorithm' if 'chosen_algorithm' in request.args else 'amp;chosen_algorithm')
     chosen_clusters = int(request.args.get('chosen_clusters' if 'chosen_clusters' in request.args else 'amp;chosen_clusters'))
 
     #Retrieve relevant data
-    retrieved_id, retrieved_display_name, retrieved_access_token = get_db().cursor().execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";').fetchone()[:3]
+    cursor = create_db_connection(DATABASE_SECRET_NAME).cursor()
+    cursor.execute(f'SELECT * FROM RadialUsers WHERE SpotifyID="{spotify_user_id}";')
+    
+    retrieved_id, retrieved_display_name, retrieved_access_token = cursor.fetchone()[:3]
 
     #Logging for debugging
     app.logger.info(f"gathered the following from the db: {retrieved_id}, {retrieved_display_name}, {retrieved_access_token}")
@@ -444,7 +406,6 @@ def deploy_cluster(cluster_id):
     #Redirect to playlist URL
     return redirect(playlist_url)
     
-
 
 
 #RUN THE FLASK SCRIPT EITHER LOCALLY OR ON SERVER

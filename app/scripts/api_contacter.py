@@ -64,6 +64,7 @@ class Contacter:
                 json.dump(spotifyState, writer)
         self.accessToken = spotifyState['accessToken']
         self.formAccessHeaderfromToken()
+
     
 
     def contact_api(self, endpoint, additional_request_parameters = None, contact_type = 'get', data_params = None):
@@ -88,7 +89,8 @@ class Contacter:
             logging.info('Successful request')
             return response
         except AssertionError:
-            logging.info('Unsuccessful request')
+            logging.info('Unsuccessful request: dumping response info and headers below')
+            # logging.info(f"ACCESS HEADER: {self.accessHeader}")
             logging.info(response.status_code)
             logging.info(response.text)
             raise AssertionError(f'There was an unsuccessful request using {endpoint}')

@@ -11,8 +11,6 @@
 }
 
 
-
-
 form button{
     width:80%;
     /* margin-left:10%; */
@@ -28,3 +26,20 @@ footer {
 footer h6 {
     font-size: 0.8rem;
 }
+
+
+
+/* DESKTOP ONLY CHANGES */
+@media only screen and (min-width: 992px) {
+    
+    .jumbotron p.text-right {
+       
+        margin-bottom: 0;
+        text-align: right;
+    }
+
+    .jumbotron {
+        margin-bottom: 1% !important;
+    }
+
+} 
