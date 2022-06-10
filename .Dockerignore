@@ -8,3 +8,4 @@ app/app_data/user_data/
 credentials/
 shell_scripts/
 sql_scripts/
+exploration/
